@@ -51,20 +51,20 @@
 #' @export
 
 calc_power <- function(
-    theta_true,           # 真实缓解率（0.20 对应原假设，0.40 对应备择假设）
-    n_current,            # 期中分析时的样本量
-    N_total,              # 计划总样本量
-    alpha0 = 0.2,         # Beta 先验分布的第一个形状参数
-    beta0 = 0.8,          # Beta 先验分布的第二个形状参数
-    theta0_null = 0.20,   # 历史对照缓解率
-    gamma_s_1 = 0.98,     # 期中有效性提前停止的后验概率阈值
-    gamma_c = 0.50,       # 期中无效性提前停止的后验概率阈值
-    gamma_f_1 = 0.95,     # 最终有效性判定的后验概率阈值
-    ntrial = 10000,       # 蒙特卡洛模拟的试验次数
-    seed = 666            # 随机数种子，NULL 表示不重新设置
+    theta_true,           # True response rate (0.20 under the null; 0.40 under the alternative)
+    n_current,            # Planned interim sample size
+    N_total,              # Maximum planned sample size
+    alpha0 = 0.2,         # First shape parameter of the Beta prior
+    beta0 = 0.8,          # Second shape parameter of the Beta prior
+    theta0_null = 0.20,   # Historical reference response rate
+    gamma_s_1 = 0.98,     # Interim posterior probability threshold for efficacy stopping
+    gamma_c = 0.50,       # Interim posterior probability threshold for futility stopping
+    gamma_f_1 = 0.95,     # Final posterior probability threshold for success
+    ntrial = 10000,       # Number of Monte Carlo trial simulations
+    seed = 666            # Random seed; NULL uses the current RNG state
 ) {
   
-  # 检查输入参数的有效性
+  # Validate inputs
   stopifnot(
     theta_true >= 0, theta_true <= 1,
     n_current >= 0, N_total >= n_current,
@@ -77,34 +77,34 @@ calc_power <- function(
   )
   if (!is.null(seed)) set.seed(seed)
   
-  # 初始化样本量及计数器
-  m_remain <- N_total - n_current  # 期中分析后的剩余样本量
-  count_null_post <- 0             # 宣布试验成功的次数
-  count_early_stop_f <- 0          # 因无效性提前停止的次数
-  count_early_stop_e <- 0          # 因有效性提前停止的次数
+  # Initialize the remaining sample size and outcome counters
+  m_remain <- N_total - n_current  # Number of patients remaining after the interim analysis
+  count_null_post <- 0             # Number of trials declared successful
+  count_early_stop_f <- 0          # Number of trials stopped early for futility
+  count_early_stop_e <- 0          # Number of trials stopped early for efficacy
   
-  # 蒙特卡洛模拟
+  # Simulate trials using Monte Carlo sampling
   for (itrial in seq_len(ntrial)) {
     
-    # 生成期中分析数据并更新后验分布
+    # Generate interim response data and update the posterior
     x_obs <- rbinom(1, n_current, theta_true)
     post <- list(
-      alpha = alpha0 + x_obs,               # 后验分布的第一个形状参数
-      beta  = beta0 + (n_current - x_obs)  # 后验分布的第二个形状参数
+      alpha = alpha0 + x_obs,               # First shape parameter of the posterior
+      beta  = beta0 + (n_current - x_obs)  # Second shape parameter of the posterior
     )
     
-    # 计算当前缓解率超过历史对照水平的后验概率
+    # Compute the posterior probability of exceeding the historical rate
     p_null <- 1 - pbeta(theta0_null, post$alpha, post$beta)
     
-    # 生成未来数据并更新最终后验分布
+    # Generate future response data and update the final posterior
     y_fut <- rbinom(1, size = m_remain, prob = theta_true)
     alpha_f <- post$alpha + y_fut
     beta_f <- post$beta + (m_remain - y_fut)
     
-    # 根据预设阈值执行期中及最终决策
+    # Apply the prespecified interim and final decision thresholds
     if (p_null > gamma_s_1) {
       
-      # 期中达到有效性标准，提前宣布成功
+      # Declare early success when the interim efficacy criterion is met
       count_null_post <- count_null_post + 1
       count_early_stop_e <- count_early_stop_e + 1
       
@@ -112,26 +112,26 @@ calc_power <- function(
       
       if (p_null > gamma_c) {
         
-        # 期中未达到提前停止标准，继续至最终分析
+        # Continue to the final analysis when neither stopping criterion is met
         p_final <- 1 - pbeta(theta0_null, alpha_f, beta_f)
         
-        # 最终达到有效性标准，宣布试验成功
+        # Declare success when the final efficacy criterion is met
         if (p_final > gamma_f_1) {
           count_null_post <- count_null_post + 1
         }
         
       } else {
         
-        # 期中未达到继续试验标准，因无效性提前停止
+        # Stop early for futility when the continuation criterion is not met
         count_early_stop_f <- count_early_stop_f + 1
       }
     }
   }
   
-  # 返回各项操作特征
+  # Return the estimated operating characteristics
   list(
-    power_null_post = count_null_post / ntrial,             # 试验成功率（一类错误率或检验功效）
-    early_stop_rate_futility = count_early_stop_f / ntrial, # 无效性提前停止概率
-    early_stop_rate_efficacy = count_early_stop_e / ntrial  # 有效性提前停止概率
+    power_null_post = count_null_post / ntrial,             # Overall success probability (type I error or power)
+    early_stop_rate_futility = count_early_stop_f / ntrial, # Probability of early futility stopping
+    early_stop_rate_efficacy = count_early_stop_e / ntrial  # Probability of early efficacy stopping
   )
 }

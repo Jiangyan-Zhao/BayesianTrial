@@ -53,19 +53,19 @@
 #' @export
 
 calc_posterior_predictive <- function(
-    x_obs,               # 当前观察到的缓解例数
-    n_current,           # 当前样本量（期中分析时）
-    N_total,             # 计划总样本量
-    alpha0 = 0.2,        # Beta 先验分布的第一个形状参数
-    beta0 = 0.8,         # Beta 先验分布的第二个形状参数
-    theta0_null = 0.20,  # 历史对照缓解率
-    theta0_clin = 0.40,  # 预设的临床目标缓解率
-    gamma_null = 0.95,   # 最终判定优于历史对照的后验概率阈值
-    gamma_clin = 0.90,   # 最终判定达到临床目标的后验概率阈值
-    S = 10000,           # 蒙特卡洛模拟次数
-    seed = 666           # 随机数种子
+    x_obs,               # Number of observed responses
+    n_current,           # Number of evaluated patients at the current analysis
+    N_total,             # Maximum planned sample size
+    alpha0 = 0.2,        # First shape parameter of the Beta prior
+    beta0 = 0.8,         # Second shape parameter of the Beta prior
+    theta0_null = 0.20,  # Historical reference response rate
+    theta0_clin = 0.40,  # Prespecified clinically relevant response-rate threshold
+    gamma_null = 0.95,   # Final posterior probability threshold for exceeding the historical rate
+    gamma_clin = 0.90,   # Final posterior probability threshold for exceeding the clinical target rate
+    S = 10000,           # Number of Monte Carlo replications
+    seed = 666           # Random seed
 ) {
-  # 检查输入参数的有效性
+  # Validate inputs
   stopifnot(
     length(x_obs) == 1L, x_obs >= 0, x_obs <= n_current,
     x_obs == as.integer(x_obs),
@@ -79,57 +79,57 @@ calc_posterior_predictive <- function(
   )
   if (!is.null(seed)) set.seed(seed)
   
-  # 更新后验分布
-  m_remain <- N_total - n_current  # 剩余样本量
+  # Update the posterior distribution
+  m_remain <- N_total - n_current  # Number of remaining patients
   post <- list(
-    alpha = alpha0 + x_obs,                 # 后验分布的第一个形状参数
-    beta  = beta0 + (n_current - x_obs)    # 后验分布的第二个形状参数
+    alpha = alpha0 + x_obs,                 # First shape parameter of the posterior
+    beta  = beta0 + (n_current - x_obs)    # Second shape parameter of the posterior
   )
   
-  # 计算后验均值和标准差
+  # Compute the posterior mean and standard deviation
   post_mean <- post$alpha / (post$alpha + post$beta)
   post_sd <- sqrt(post$alpha * post$beta /
                     ((post$alpha + post$beta)^2 * (post$alpha + post$beta + 1)))
   
-  # 计算当前后验概率
+  # Compute the current posterior probability
   p_null <- 1 - pbeta(theta0_null, post$alpha, post$beta)
   
-  # 通过蒙特卡洛模拟计算两种最终成功标准的预测成功概率
+  # Estimate predictive probabilities for both final success criteria
   success_null <- numeric(S)
   success_clin <- numeric(S)
   
   for (s in seq_len(S)) {
     
-    # 从当前后验分布中抽取真实缓解率
+    # Draw a response rate from the current posterior
     pi_s <- rbeta(1, post$alpha, post$beta)
     
-    # 模拟剩余患者的缓解例数
+    # Simulate the number of responses among the remaining patients
     y_fut <- rbinom(1, size = m_remain, prob = pi_s)
     
-    # 根据当前及未来数据更新最终后验分布
+    # Update the final posterior using current and simulated future responses
     alpha_f <- post$alpha + y_fut
     beta_f <- post$beta + (m_remain - y_fut)
     
-    # 计算最终后验概率
+    # Compute the final posterior probabilities
     p_final_null <- 1 - pbeta(theta0_null, alpha_f, beta_f)
     p_final_clin <- 1 - pbeta(theta0_clin, alpha_f, beta_f)
     
-    # 判断是否达到预设的最终成功标准
+    # Evaluate the prespecified final success criteria
     success_null[s] <- as.numeric(p_final_null >= gamma_null)
     success_clin[s] <- as.numeric(p_final_clin >= gamma_clin)
   }
   
-  # 计算达到最终成功标准的模拟比例
+  # Estimate predictive probabilities as proportions of successful replications
   ppos_null <- mean(success_null)
   ppos_clin <- mean(success_clin)
   
-  # 返回后验分布及相关决策概率
+  # Return posterior summaries and decision probabilities
   list(
-    posterior = post,           # Beta 后验分布的形状参数
-    posterior_mean = post_mean, # 后验均值
-    posterior_sd = post_sd,     # 后验标准差
-    p_null = p_null,            # 缓解率超过历史对照水平的后验概率
-    ppos_null = ppos_null,      # 最终判定优于历史对照的预测成功概率
-    ppos_clin = ppos_clin       # 最终判定达到临床目标的预测成功概率
+    posterior = post,           # Shape parameters of the Beta posterior
+    posterior_mean = post_mean, # Posterior mean
+    posterior_sd = post_sd,     # Posterior standard deviation
+    p_null = p_null,            # Posterior probability of exceeding the historical rate
+    ppos_null = ppos_null,      # Predictive probability of meeting the historical-rate success criterion
+    ppos_clin = ppos_clin       # Predictive probability of meeting the clinical-target success criterion
   )
 }
