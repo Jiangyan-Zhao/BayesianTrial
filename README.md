@@ -1,1 +1,1 @@
-# TrialBayes: Bayesian Decision-Making for Clinical Trials
+# BayesianTrial: Bayesian Decision-Making for Clinical Trials
