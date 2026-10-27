@@ -1,0 +1,17 @@
+Package: BayesianTrial
+Title: Bayesian Decision-Making for Clinical Trials
+Version: 0.0.0.9000
+Authors@R: c(
+    person(given = "Jiangyan", family = "Zhao", email = "zhaojy2017@126.com", role = c("cre", "aut")),
+    person(given = "Rongji", family = "Mu", email = "rjmu@sjtu.edu.cn", role = "aut")
+  )
+Maintainer: Jiangyan Zhao <zhaojy2017@126.com>
+Description: What the package does (one paragraph).
+License: GPL (>= 3)
+URL: https://github.com/Jiangyan-Zhao/BayesianTrial
+BugReports: https://github.com/Jiangyan-Zhao/BayesianTrial/issues
+Encoding: UTF-8
+NeedsCompilation: no
+Roxygen: list(markdown = TRUE)
+Depends: R (>= 3.5.0)
+Config/roxygen2/version: 8.1.0
