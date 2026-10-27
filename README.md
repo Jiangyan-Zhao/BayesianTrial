@@ -8,27 +8,22 @@ two-stage single-arm trials with binary endpoints:
 - `oc_singlearm_binary()` estimates overall trial success and interim
   stopping probabilities by simulating complete trials.
 
-## Reproduce the manuscript example
+## Usage guide
 
-The [paper reproduction vignette](vignettes/paper-reproduction.Rmd)
-reproduces the interim analysis and Table 1 in Zhao and Mu,
-*Introduction to Bayesian Decision Method and Its Application in Medical
-Research* (manuscript). It uses the hypothetical ORR example with 9 responses
-among 20 patients, a maximum of 40 patients, and a Beta(0.2, 0.8) prior.
+The [single-arm phase II trial guide](vignettes/singlearm-binary.Rmd)
+explains how to specify binary response data and priors, calculate and
+interpret posterior and predictive probabilities, apply posterior stopping
+rules, and evaluate type I error, power, and early stopping probabilities.
+It includes a hypothetical response-rate example and explains how to adapt
+the inputs to another study.
 
-Install the optional `rpact` package before building the vignette to also
-run the manuscript's frequentist group sequential comparison:
+Install the package with its vignette:
 
 ```r
-install.packages(c("remotes", "knitr", "rmarkdown", "rpact"))
+install.packages(c("remotes", "knitr", "rmarkdown"))
 remotes::install_github(
   "Jiangyan-Zhao/BayesianTrial",
   build_vignettes = TRUE
 )
-vignette("paper-reproduction", package = "BayesianTrial")
+vignette("singlearm-binary", package = "BayesianTrial")
 ```
-
-The Bayesian calculations use 10,000 Monte Carlo replications and seed 666,
-matching the reference script. The vignette reports the settings, decision
-rules, generated results, and R session information.
-

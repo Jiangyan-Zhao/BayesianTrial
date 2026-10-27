@@ -21,8 +21,7 @@ Imports:
     stats
 Suggests:
     knitr,
-    rmarkdown,
-    rpact (>= 4.3.0)
+    rmarkdown
 VignetteBuilder: knitr, rmarkdown
 Config/roxygen2/version: 8.1.0
 
