@@ -42,9 +42,9 @@
 #'     probability of exceeding \code{theta0_clin} is at least
 #'     \code{gamma_clin}.}
 #' }
-#' @seealso \code{\link{calc_power}}
+#' @seealso \code{\link{oc_singlearm_binary}}
 #' @examples
-#' result <- calc_posterior_predictive(
+#' result <- posterior_predictive_singlearm_binary(
 #'   x_obs = 9, n_current = 20, N_total = 40, S = 1000
 #' )
 #' result$p_null
@@ -52,7 +52,7 @@
 #' @importFrom stats pbeta rbeta rbinom
 #' @export
 
-calc_posterior_predictive <- function(
+posterior_predictive_singlearm_binary <- function(
     x_obs,               # Number of observed responses
     n_current,           # Number of evaluated patients at the current analysis
     N_total,             # Maximum planned sample size

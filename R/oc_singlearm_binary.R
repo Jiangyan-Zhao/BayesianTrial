@@ -40,17 +40,17 @@
 #'   \item{early_stop_rate_efficacy}{Estimated probability of interim
 #'     efficacy stopping.}
 #' }
-#' @seealso \code{\link{calc_posterior_predictive}}
+#' @seealso \code{\link{posterior_predictive_singlearm_binary}}
 #' @examples
-#' null_oc <- calc_power(theta_true = 0.20, n_current = 20,
+#' null_oc <- oc_singlearm_binary(theta_true = 0.20, n_current = 20,
 #'                       N_total = 40, ntrial = 1000)
-#' alternative_oc <- calc_power(theta_true = 0.40, n_current = 20,
+#' alternative_oc <- oc_singlearm_binary(theta_true = 0.40, n_current = 20,
 #'                              N_total = 40, ntrial = 1000)
 #' null_oc
 #' alternative_oc
 #' @export
 
-calc_power <- function(
+oc_singlearm_binary <- function(
     theta_true,           # True response rate (0.20 under the null; 0.40 under the alternative)
     n_current,            # Planned interim sample size
     N_total,              # Maximum planned sample size
