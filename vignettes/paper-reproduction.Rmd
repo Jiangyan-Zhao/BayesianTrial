@@ -1,0 +1,324 @@
+---
+title: "Reproducing the single-arm phase II trial example"
+author: "Jiangyan Zhao and Rongji Mu"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{Reproducing the single-arm phase II trial example}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+library(BayesianTrial)
+RNGkind("Mersenne-Twister", "Inversion")
+has_rpact <- requireNamespace("rpact", quietly = TRUE)
+```
+
+## Purpose
+
+This vignette reproduces the Bayesian calculations in Section 3 and Table 1
+of Zhao and Mu, *Introduction to Bayesian Decision Method and Its Application
+in Medical Research* (manuscript). The example is a **hypothetical** single-arm
+phase II trial of a combination treatment for advanced non-small-cell lung
+cancer, with objective response rate (ORR) as the primary endpoint.
+
+The reference R script and this package use the same calculations. Their
+function names are mapped as follows:
+
+| Reference script | BayesianTrial |
+|:--|:--|
+| `calc_posterior_predictive()` | `posterior_predictive_singlearm_binary()` |
+| `calc_power()` | `oc_singlearm_binary()` |
+
+The optional final section uses `rpact` to reproduce the frequentist
+comparison. All Bayesian calculations use the two exported BayesianTrial
+functions; the vignette does not redefine them.
+
+## Clinical question and prespecified design
+
+The historical response rate is 20%, and a true response rate of 40% is the
+alternative used to evaluate power. We evaluate a design with a one-sided
+type I error target of 5% and a power target of 85%.
+
+| Design component | Value |
+|:--|:--|
+| Historical reference response rate | 0.20 |
+| Alternative response rate for power | 0.40 |
+| Prior for the response rate | Beta(0.2, 0.8) |
+| Interim sample size | 20 |
+| Maximum sample size | 40 |
+| Observed responses at interim | 9 |
+| Monte Carlo replications per calculation | 10,000 |
+| Seed supplied to each function call | 666 |
+
+The prior has mean 0.20 and concentration $0.2 + 0.8 = 1$. It is the prior
+used in the manuscript and reference script, rather than a uniform Beta(1, 1)
+prior. The sample sizes and thresholds below are supplied to the functions;
+the vignette evaluates this design rather than searching for an optimal
+sample size.
+
+### Posterior decision thresholds
+
+Let $p_n = \Pr(\theta > 0.20 \mid D_n)$. The manuscript uses three
+posterior probability thresholds:
+
+| Manuscript notation | Decision | Argument in `oc_singlearm_binary()` |
+|:--|:--|:--|
+| $\gamma_s = 0.98$ | Early success if $p_{20} > 0.98$ | `gamma_s_1 = 0.98` |
+| $\gamma_f = 0.50$ | Early futility if $p_{20} \leq 0.50$ | `gamma_c = 0.50` |
+| $\gamma_{\mathrm{final}} = 0.95$ | Final success if $p_{40} > 0.95$ | `gamma_f_1 = 0.95` |
+
+If neither interim stopping criterion is met, the trial continues to 40
+patients. The argument `gamma_c` is a threshold for the **current posterior
+probability**, not for a predictive probability. Likewise, `gamma_f_1`
+denotes the final success threshold in the package, despite the letter `f`
+also appearing in the manuscript's notation for futility.
+
+The alternative rate 0.40 is used to assess power. The success criterion for
+the trial and Table 1 always concerns exceeding the historical rate 0.20.
+
+## Interim analysis with 9 responses among 20 patients
+
+The posterior response-rate distribution is
+
+$$
+\theta \mid D_{20} \sim \operatorname{Beta}(0.2 + 9,\; 0.8 + 20 - 9)
+= \operatorname{Beta}(9.2,\; 11.8).
+$$
+
+```{r interim-calculation}
+case_result <- posterior_predictive_singlearm_binary(
+  x_obs = 9,
+  n_current = 20,
+  N_total = 40,
+  alpha0 = 0.2,
+  beta0 = 0.8,
+  theta0_null = 0.20,
+  theta0_clin = 0.40,
+  gamma_null = 0.95,
+  gamma_clin = 0.90,
+  S = 10000,
+  seed = 666
+)
+
+interim_summary <- data.frame(
+  Quantity = c(
+    "Posterior distribution", "Posterior mean", "Posterior standard deviation",
+    "Posterior probability of exceeding 0.20",
+    "Predictive probability of final success"
+  ),
+  Value = c(
+    sprintf("Beta(%.1f, %.1f)", case_result$posterior$alpha,
+            case_result$posterior$beta),
+    sprintf("%.4f", case_result$posterior_mean),
+    sprintf("%.4f", case_result$posterior_sd),
+    sprintf("%.2f%%", 100 * case_result$p_null),
+    sprintf("%.2f%%", 100 * case_result$ppos_null)
+  )
+)
+knitr::kable(interim_summary)
+```
+
+The posterior probability is approximately **99.23%**, which exceeds the
+98% interim efficacy threshold. The prespecified decision is therefore
+early trial success.
+
+The posterior probability is evaluated using the Beta distribution function.
+The predictive probability is a Monte Carlo estimate: it draws a response
+rate from the current posterior, simulates responses among the remaining
+20 patients, and checks whether the final posterior criterion is met.
+
+The estimated predictive probability is **96.35%**. It answers the
+conditional question, "If recruitment continued to 40 patients, how likely
+would the final success criterion be met?" The calculation is informative
+even though the observed data already trigger early success.
+
+Here `gamma_null = 0.95` specifies the posterior success criterion at the
+final analysis; it is not a cutoff on the predictive probability itself.
+The helper also calculates `ppos_clin` using `theta0_clin = 0.40` and
+`gamma_clin = 0.90`, matching the reference script. That additional output
+is not used in the manuscript's stopping rule or Table 1.
+
+## Reproduce Table 1
+
+We simulate the complete trial twice: once under the null response rate
+0.20, and once under the alternative response rate 0.40. Each call resets
+the seed to 666, as in the reference script.
+
+```{r operating-characteristics}
+true_rates <- c(0.20, 0.40)
+oc_results <- lapply(true_rates, function(theta) {
+  oc_singlearm_binary(
+    theta_true = theta,
+    n_current = 20,
+    N_total = 40,
+    alpha0 = 0.2,
+    beta0 = 0.8,
+    theta0_null = 0.20,
+    gamma_s_1 = 0.98,
+    gamma_c = 0.50,
+    gamma_f_1 = 0.95,
+    ntrial = 10000,
+    seed = 666
+  )
+})
+
+oc_values <- vapply(oc_results, unlist, numeric(3))
+oc_table <- data.frame(
+  "Operating characteristic" = c(
+    "Probability of trial success (%)",
+    "Probability of early stopping for futility (%)",
+    "Probability of early stopping for efficacy (%)"
+  ),
+  "True ORR = 0.20" = 100 * oc_values[, 1],
+  "True ORR = 0.40" = 100 * oc_values[, 2],
+  check.names = FALSE
+)
+knitr::kable(oc_table, digits = 2, row.names = FALSE)
+```
+
+The success probabilities reproduce the manuscript's **4.35% type I error
+estimate** and **86.16% power estimate**. The futility stopping probabilities
+are **62.49%** and **4.97%**, and the efficacy stopping probabilities are
+**0.95%** and **41.06%**. The manuscript labels the last row "early stopping
+for promising"; it corresponds to early efficacy stopping in the package.
+
+The following check compares the generated percentages with Table 1:
+
+```{r manuscript-check}
+manuscript_percentages <- matrix(
+  c(4.35, 62.49, 0.95, 86.16, 4.97, 41.06),
+  nrow = 3
+)
+stopifnot(
+  isTRUE(all.equal(unname(round(100 * oc_values, 2)),
+                   manuscript_percentages)),
+  round(100 * case_result$p_null, 2) == 99.23,
+  round(100 * case_result$ppos_null, 2) == 96.35
+)
+```
+
+The displayed values are simulation estimates. For example, a Monte Carlo
+standard error for an estimated probability $\widehat p$ from $B$ trials is
+$\sqrt{\widehat p(1-\widehat p)/B}$. Larger `ntrial` values improve precision;
+changing the seed changes the simulation results. Keeping the stated seed,
+replication counts, and random-number generator settings reproduces the
+reference run.
+
+## Interpret the response-count boundaries
+
+For this design the posterior thresholds imply simple response-count rules.
+We obtain the boundaries directly from the attainable interim and final
+posterior probabilities:
+
+```{r response-count-boundaries}
+x_interim <- 0:20
+p_interim <- 1 - pbeta(0.20, 0.2 + x_interim, 0.8 + 20 - x_interim)
+x_final <- 0:40
+p_final <- 1 - pbeta(0.20, 0.2 + x_final, 0.8 + 40 - x_final)
+
+max_futility <- max(x_interim[p_interim <= 0.50])
+min_early_success <- min(x_interim[p_interim > 0.98])
+min_final_success <- min(x_final[p_final > 0.95])
+
+count_rules <- data.frame(
+  Analysis = c("Interim", "Interim", "Interim", "Final, if continued"),
+  Responses = c(
+    sprintf("0 to %d of 20", max_futility),
+    sprintf("%d to %d of 20", max_futility + 1, min_early_success - 1),
+    sprintf("%d to 20 of 20", min_early_success),
+    sprintf("%d to 40 of 40", min_final_success)
+  ),
+  Decision = c("Stop for futility", "Continue", "Declare early success",
+               "Declare final success")
+)
+knitr::kable(count_rules)
+
+stopifnot(identical(p_final >= 0.95, p_final > 0.95))
+```
+
+Thus 0--4 responses at interim imply futility, 5--8 imply continuation,
+and 9 or more imply early success. For a trial that continues, at least
+13 responses among all 40 patients are needed for final success; otherwise
+the final analysis does not declare success.
+
+The predictive helper uses `>=` for its final posterior comparison, whereas
+the OC helper uses `>`, preserving the reference script. The check above
+confirms that both comparisons yield identical decisions for the attainable
+posterior probabilities at $N = 40$ and the threshold 0.95.
+
+## Frequentist comparison with rpact
+
+The manuscript also reports a one-sided group sequential comparison with
+Lan--DeMets O'Brien--Fleming-type alpha spending, information fractions
+0.5 and 1, and a **binding** interim futility boundary at $Z \leq 0$.
+The following code uses the
+[`rpact` group sequential design interface](https://docs.rpact.org/reference/getDesignGroupSequential.html).
+The boundary calculation runs when `rpact` is installed.
+
+```{r optional-rpact-message, echo=FALSE, results='asis'}
+if (!has_rpact) {
+  cat("Install the optional package with `install.packages(\"rpact\")` ",
+      "and rebuild this vignette to run the boundary comparison.\n")
+}
+```
+
+```{r frequentist-boundaries, eval=has_rpact}
+frequentist_design <- rpact::getDesignGroupSequential(
+  kMax = 2,
+  informationRates = c(0.5, 1),
+  alpha = 0.05,
+  beta = 0.15,
+  sided = 1,
+  typeOfDesign = "asOF",
+  futilityBounds = 0,
+  futilityBoundsScale = "zValue",
+  bindingFutility = TRUE
+)
+
+frequentist_boundaries <- data.frame(
+  Analysis = c("Interim", "Final"),
+  "Information fraction" = c(0.5, 1),
+  "Nominal one-sided p boundary" = frequentist_design$stageLevels,
+  "Critical Z value" = frequentist_design$criticalValues,
+  check.names = FALSE
+)
+knitr::kable(frequentist_boundaries, digits = c(0, 1, 4, 2))
+
+stopifnot(
+  identical(round(frequentist_design$stageLevels, 4), c(0.0056, 0.0495)),
+  identical(round(frequentist_design$criticalValues, 2), c(2.54, 1.65))
+)
+```
+
+For the observed data, the manuscript uses a normal-approximation score
+statistic without a continuity correction:
+
+```{r frequentist-observed-data}
+z_interim <- (9 / 20 - 0.20) / sqrt(0.20 * 0.80 / 20)
+p_one_sided <- pnorm(z_interim, lower.tail = FALSE)
+data.frame(
+  Z = round(z_interim, 2),
+  one_sided_p = round(p_one_sided, 4)
+)
+```
+
+The resulting $Z \approx 2.80$ and $p \approx 0.0026$ cross the reported
+interim boundaries $Z \approx 2.54$ and $p \approx 0.0056$, supporting early
+efficacy stopping under this comparison. This reproduces the manuscript's
+normal approximation, rather than an exact binomial test.
+
+## Reproducibility information
+
+The settings used here are 10,000 replications for predictive probabilities,
+10,000 simulated trials per true response rate, seed 666 in every function
+call, and the Mersenne--Twister random-number generator with inversion for
+normal random variates. Session information records the software versions
+used to build the vignette:
+
+```{r session-information}
+sessionInfo()
+```

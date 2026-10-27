@@ -6,7 +6,10 @@ Authors@R: c(
     person(given = "Rongji", family = "Mu", email = "rjmu@sjtu.edu.cn", role = "aut")
   )
 Maintainer: Jiangyan Zhao <zhaojy2017@126.com>
-Description: What the package does (one paragraph).
+Description: Calculate posterior and predictive probabilities and evaluate
+    operating characteristics for Bayesian clinical trial decision rules.
+    The current implementation supports two-stage single-arm trials with
+    binary endpoints, Beta priors, and Monte Carlo simulation.
 License: GPL (>= 3)
 URL: https://github.com/Jiangyan-Zhao/BayesianTrial
 BugReports: https://github.com/Jiangyan-Zhao/BayesianTrial/issues
@@ -14,4 +17,12 @@ Encoding: UTF-8
 NeedsCompilation: no
 Roxygen: list(markdown = TRUE)
 Depends: R (>= 3.5.0)
+Imports:
+    stats
+Suggests:
+    knitr,
+    rmarkdown,
+    rpact (>= 4.3.0)
+VignetteBuilder: knitr, rmarkdown
 Config/roxygen2/version: 8.1.0
+
