@@ -10,9 +10,9 @@
 #' @param alpha0,beta0 Positive shape parameters of the Beta prior.
 #' @param theta0_null Historical reference response rate, between 0 and 1.
 #' @param theta0_clin Clinically relevant response-rate threshold, between 0 and 1.
-#' @param gamma_null Final posterior probability threshold for success
+#' @param gamma_final Final posterior probability threshold for success
 #'   relative to \code{theta0_null}, between 0 and 1.
-#' @param gamma_clin Final posterior probability threshold for success
+#' @param gamma_clin_final Final posterior probability threshold for success
 #'   relative to \code{theta0_clin}, between 0 and 1.
 #' @param S Positive integer number of Monte Carlo replications.
 #' @param seed Integer random seed, or \code{NULL} to use the current random
@@ -23,9 +23,10 @@
 #' For every Monte Carlo replication, draw a response rate from Beta(a, b),
 #' generate the remaining responses, update the posterior, and evaluate the
 #' two final success criteria. Both predictive probabilities use the same
-#' simulated future data. The final success comparisons use \code{>=},
-#' matching the supplied source script. The predictive probabilities are
-#' Monte Carlo estimates, not exact Beta-binomial sums.
+#' simulated future data. Final success requires the posterior probability
+#' to be strictly greater than the corresponding threshold. Equality does
+#' not constitute success. Predictive probabilities are Monte Carlo
+#' estimates, not exact Beta-binomial sums.
 #'
 #' @return A named list containing:
 #' \describe{
@@ -36,11 +37,11 @@
 #'   \item{p_null}{Posterior probability that the response rate exceeds
 #'     \code{theta0_null}.}
 #'   \item{ppos_null}{Predictive probability that the final posterior
-#'     probability of exceeding \code{theta0_null} is at least
-#'     \code{gamma_null}.}
+#'     probability of exceeding \code{theta0_null} is strictly greater than
+#'     \code{gamma_final}.}
 #'   \item{ppos_clin}{Predictive probability that the final posterior
-#'     probability of exceeding \code{theta0_clin} is at least
-#'     \code{gamma_clin}.}
+#'     probability of exceeding \code{theta0_clin} is strictly greater than
+#'     \code{gamma_clin_final}.}
 #' }
 #' @seealso \code{\link{oc_singlearm_binary}}
 #' @examples
@@ -60,8 +61,8 @@ posterior_predictive_singlearm_binary <- function(
     beta0 = 0.8,         # Second shape parameter of the Beta prior
     theta0_null = 0.20,  # Historical reference response rate
     theta0_clin = 0.40,  # Prespecified clinically relevant response-rate threshold
-    gamma_null = 0.95,   # Final posterior probability threshold for exceeding the historical rate
-    gamma_clin = 0.90,   # Final posterior probability threshold for exceeding the clinical target rate
+    gamma_final = 0.95,   # Final posterior probability threshold for exceeding the historical rate
+    gamma_clin_final = 0.90,   # Final posterior probability threshold for exceeding the clinical target rate
     S = 10000,           # Number of Monte Carlo replications
     seed = 666           # Random seed
 ) {
@@ -74,8 +75,8 @@ posterior_predictive_singlearm_binary <- function(
     alpha0 > 0, beta0 > 0, S >= 1, S == as.integer(S),
     theta0_null >= 0, theta0_null <= 1,
     theta0_clin >= 0, theta0_clin <= 1,
-    gamma_null >= 0, gamma_null <= 1,
-    gamma_clin >= 0, gamma_clin <= 1
+    gamma_final >= 0, gamma_final <= 1,
+    gamma_clin_final >= 0, gamma_clin_final <= 1
   )
   if (!is.null(seed)) set.seed(seed)
   
@@ -92,7 +93,7 @@ posterior_predictive_singlearm_binary <- function(
                     ((post$alpha + post$beta)^2 * (post$alpha + post$beta + 1)))
   
   # Compute the current posterior probability
-  p_null <- 1 - pbeta(theta0_null, post$alpha, post$beta)
+  p_null <- pbeta(theta0_null, post$alpha, post$beta, lower.tail = FALSE)
   
   # Estimate predictive probabilities for both final success criteria
   success_null <- numeric(S)
@@ -111,12 +112,12 @@ posterior_predictive_singlearm_binary <- function(
     beta_f <- post$beta + (m_remain - y_fut)
     
     # Compute the final posterior probabilities
-    p_final_null <- 1 - pbeta(theta0_null, alpha_f, beta_f)
-    p_final_clin <- 1 - pbeta(theta0_clin, alpha_f, beta_f)
+    p_final_null <- pbeta(theta0_null, alpha_f, beta_f, lower.tail = FALSE)
+    p_final_clin <- pbeta(theta0_clin, alpha_f, beta_f, lower.tail = FALSE)
     
     # Evaluate the prespecified final success criteria
-    success_null[s] <- as.numeric(p_final_null >= gamma_null)
-    success_clin[s] <- as.numeric(p_final_clin >= gamma_clin)
+    success_null[s] <- as.numeric(p_final_null > gamma_final)
+    success_clin[s] <- as.numeric(p_final_clin > gamma_clin_final)
   }
   
   # Estimate predictive probabilities as proportions of successful replications

@@ -72,11 +72,11 @@ test_that("predictive probabilities match exact calculations", {
 
   # Exact posterior predictive probabilities of success
   exact_null <- sum(
-    prob_y * (p_final_null >= 0.95)
+    prob_y * (p_final_null > 0.95)
   )
 
   exact_clin <- sum(
-    prob_y * (p_final_clin >= 0.90)
+    prob_y * (p_final_clin > 0.90)
   )
 
   # Verify that the predictive probability mass sums to one
@@ -136,7 +136,7 @@ test_that("predictive outcome is deterministic at final analysis", {
   # No future patients remain at the final analysis
   expect_equal(
     result$ppos_null,
-    as.numeric(result$p_null >= 0.95)
+    as.numeric(result$p_null > 0.95)
   )
 })
 
@@ -181,4 +181,37 @@ test_that("invalid inputs are rejected", {
       S = 0
     )
   )
+})
+
+
+# Verify strict final success criteria at equality boundaries
+test_that("equality with final success thresholds is not success", {
+
+  x_obs <- 13
+  n_current <- 40
+
+  # Match both success thresholds to the exact posterior probabilities
+  p_boundary_null <- pbeta(
+    0.20, 0.2 + x_obs, 0.8 + n_current - x_obs,
+    lower.tail = FALSE
+  )
+
+  p_boundary_clin <- pbeta(
+    0.40, 0.2 + x_obs, 0.8 + n_current - x_obs,
+    lower.tail = FALSE
+  )
+
+  result <- posterior_predictive_singlearm_binary(
+    x_obs = x_obs,
+    n_current = n_current,
+    N_total = n_current,
+    gamma_final = p_boundary_null,
+    gamma_clin_final = p_boundary_clin,
+    S = 1,
+    seed = 666
+  )
+
+  expect_equal(result$p_null, p_boundary_null)
+  expect_equal(result$ppos_null, 0)
+  expect_equal(result$ppos_clin, 0)
 })

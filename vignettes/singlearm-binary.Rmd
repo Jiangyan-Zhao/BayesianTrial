@@ -75,8 +75,8 @@ probabilities <- posterior_predictive_singlearm_binary(
   beta0 = 0.8,
   theta0_null = 0.20,
   theta0_clin = 0.40,
-  gamma_null = 0.95,
-  gamma_clin = 0.90,
+  gamma_final = 0.95,
+  gamma_clin_final = 0.90,
   S = 10000,
   seed = 666
 )
@@ -94,8 +94,8 @@ The additional arguments control the predictive calculations:
 | Argument | Meaning |
 |:--|:--|
 | `theta0_clin` | Response-rate threshold for the additional clinical-target calculation. |
-| `gamma_null` | Required final posterior probability of exceeding `theta0_null`. |
-| `gamma_clin` | Required final posterior probability of exceeding `theta0_clin`. |
+| `gamma_final` | Required final posterior probability of exceeding `theta0_null`. |
+| `gamma_clin_final` | Required final posterior probability of exceeding `theta0_clin`. |
 | `S` | Number of Monte Carlo replications for predictive probabilities. |
 
 The returned object is a named list:
@@ -106,8 +106,8 @@ The returned object is a named list:
 | `posterior_mean` | Posterior mean of the response rate. |
 | `posterior_sd` | Posterior standard deviation of the response rate. |
 | `p_null` | Current posterior probability that the response rate exceeds `theta0_null`. |
-| `ppos_null` | Predictive probability that the final posterior probability of exceeding `theta0_null` is at least `gamma_null`. |
-| `ppos_clin` | Predictive probability that the final posterior probability of exceeding `theta0_clin` is at least `gamma_clin`. |
+| `ppos_null` | Predictive probability that the final posterior probability of exceeding `theta0_null` is strictly greater than `gamma_final`. |
+| `ppos_clin` | Predictive probability that the final posterior probability of exceeding `theta0_clin` is strictly greater than `gamma_clin_final`. |
 
 Here the posterior is Beta(9.2, 11.8). The current probability of exceeding
 the historical rate is `r sprintf("%.2f%%", 100 * probabilities$p_null)`,
@@ -120,7 +120,7 @@ responses and asks whether the specified final criterion would be met
 after recruitment to `N_total`. The `ppos_clin` output evaluates the
 separate clinical-target criterion.
 
-In particular, `gamma_null = 0.95` is a threshold on the **final posterior
+In particular, `gamma_final = 0.95` is a threshold on the **final posterior
 probability**, rather than a cutoff on the predictive probability itself.
 
 ## Use posterior probabilities for trial decisions
@@ -139,11 +139,11 @@ and 0.95 for final success, all relative to the historical rate 0.20.
 Apply the interim rule to the calculated `p_null`:
 
 ```{r interim-decision}
-gamma_early_success <- 0.98
+gamma_early <- 0.98
 gamma_futility <- 0.50
 gamma_final <- 0.95
 
-interim_decision <- if (probabilities$p_null > gamma_early_success) {
+interim_decision <- if (probabilities$p_null > gamma_early) {
   "Stop for efficacy"
 } else if (probabilities$p_null <= gamma_futility) {
   "Stop for futility"
@@ -169,7 +169,7 @@ final_result <- posterior_predictive_singlearm_binary(
   alpha0 = 0.2,
   beta0 = 0.8,
   theta0_null = 0.20,
-  gamma_null = gamma_final,
+  gamma_final = gamma_final,
   S = 1,
   seed = 666
 )
@@ -191,14 +191,14 @@ arguments are:
 | Argument | Meaning |
 |:--|:--|
 | `theta_true` | True response rate used to generate trial data. |
-| `gamma_s_1` | Interim posterior threshold for early efficacy stopping. |
-| `gamma_c` | Interim posterior threshold for futility stopping. |
-| `gamma_f_1` | Final posterior threshold for success. |
+| `gamma_early` | Interim posterior threshold for early efficacy stopping. |
+| `gamma_futility` | Interim posterior threshold for futility stopping. |
+| `gamma_final` | Final posterior threshold for success. |
 | `ntrial` | Number of simulated complete trials. |
 
-The argument `gamma_c` applies to the current posterior probability, not
-to a predictive probability. The argument `gamma_f_1` specifies **final
-success**, despite its name containing the letter `f`.
+The argument `gamma_futility` applies to the current posterior probability, not
+to a predictive probability. The argument `gamma_final` specifies the
+final posterior success criterion.
 
 The following example evaluates the historical null rate 0.20 and an
 alternative rate 0.40 using the prior, sample sizes, and stopping
@@ -214,9 +214,9 @@ oc_results <- lapply(true_rates, function(theta) {
     alpha0 = 0.2,
     beta0 = 0.8,
     theta0_null = 0.20,
-    gamma_s_1 = gamma_early_success,
-    gamma_c = gamma_futility,
-    gamma_f_1 = gamma_final,
+    gamma_early = gamma_early,
+    gamma_futility = gamma_futility,
+    gamma_final = gamma_final,
     ntrial = 10000,
     seed = 666
   )
@@ -250,12 +250,9 @@ serve different purposes. The current OC function evaluates the
 historical-reference posterior rule; it does not use `ppos_null` or
 `ppos_clin` as stopping criteria.
 
-The predictive helper uses `>=` for its final posterior comparison,
-whereas the OC rule uses `>` for efficacy and final success. Use the
-precise comparisons described for each function when configuring a
-design. For the illustrative sample size and final threshold, no
-attainable final posterior probability equals 0.95, so the final
-comparisons agree in this example.
+Both functions use strict `>` comparisons for success criteria and `<=`
+for the interim futility criterion. A posterior probability equal to a
+success threshold does not count as success.
 
 ## Adapt the settings and control simulation precision
 

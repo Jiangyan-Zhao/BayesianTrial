@@ -8,12 +8,12 @@
 #' @param N_total Maximum planned sample size.
 #' @param alpha0,beta0 Positive shape parameters of the Beta prior.
 #' @param theta0_null Historical reference response rate, between 0 and 1.
-#' @param gamma_s_1 Interim posterior probability threshold for early
+#' @param gamma_early Interim posterior probability threshold for early
 #'   efficacy stopping.
-#' @param gamma_c Interim posterior probability threshold for futility
+#' @param gamma_futility Interim posterior probability threshold for futility
 #'   stopping. This applies to the \emph{current posterior probability},
 #'   not to a predictive probability.
-#' @param gamma_f_1 Final posterior probability threshold for success.
+#' @param gamma_final Final posterior probability threshold for success.
 #' @param ntrial Positive integer number of simulated trials.
 #' @param seed Integer random seed, or \code{NULL} to use the current random
 #'   number generator state. Providing a seed resets the session RNG state.
@@ -22,9 +22,9 @@
 #' For each simulated trial, the interim posterior probability that the
 #' true response rate exceeds \code{theta0_null} is evaluated. The trial
 #' declares early success when this probability is strictly greater than
-#' \code{gamma_s_1}; stops for futility when it is less than or equal to
-#' \code{gamma_c}; otherwise the final probability is compared strictly
-#' against \code{gamma_f_1}. The routine draws future data even for trials
+#' \code{gamma_early}; stops for futility when it is less than or equal to
+#' \code{gamma_futility}; otherwise the final probability is compared strictly
+#' against \code{gamma_final}. The routine draws future data even for trials
 #' that stop early, preserving the random number sequence of the source
 #' script; future data do not affect decisions in those trials.
 #'
@@ -57,9 +57,9 @@ oc_singlearm_binary <- function(
     alpha0 = 0.2,         # First shape parameter of the Beta prior
     beta0 = 0.8,          # Second shape parameter of the Beta prior
     theta0_null = 0.20,   # Historical reference response rate
-    gamma_s_1 = 0.98,     # Interim posterior probability threshold for efficacy stopping
-    gamma_c = 0.50,       # Interim posterior probability threshold for futility stopping
-    gamma_f_1 = 0.95,     # Final posterior probability threshold for success
+    gamma_early = 0.98,     # Interim posterior probability threshold for efficacy stopping
+    gamma_futility = 0.50,       # Interim posterior probability threshold for futility stopping
+    gamma_final = 0.95,     # Final posterior probability threshold for success
     ntrial = 10000,       # Number of Monte Carlo trial simulations
     seed = 666            # Random seed; NULL uses the current RNG state
 ) {
@@ -70,9 +70,10 @@ oc_singlearm_binary <- function(
     n_current >= 0, N_total >= n_current,
     n_current == as.integer(n_current), N_total == as.integer(N_total),
     alpha0 > 0, beta0 > 0, theta0_null >= 0, theta0_null <= 1,
-    gamma_s_1 >= 0, gamma_s_1 <= 1,
-    gamma_c >= 0, gamma_c <= 1,
-    gamma_f_1 >= 0, gamma_f_1 <= 1,
+    gamma_early >= 0, gamma_early <= 1,
+    gamma_futility >= 0, gamma_futility <= 1,
+    gamma_final >= 0, gamma_final <= 1,
+    gamma_futility < gamma_early,
     ntrial >= 1, ntrial == as.integer(ntrial)
   )
   if (!is.null(seed)) set.seed(seed)
@@ -94,7 +95,7 @@ oc_singlearm_binary <- function(
     )
     
     # Compute the posterior probability of exceeding the historical rate
-    p_null <- 1 - pbeta(theta0_null, post$alpha, post$beta)
+    p_null <- pbeta(theta0_null, post$alpha, post$beta, lower.tail = FALSE)
     
     # Generate future response data and update the final posterior
     y_fut <- rbinom(1, size = m_remain, prob = theta_true)
@@ -102,7 +103,7 @@ oc_singlearm_binary <- function(
     beta_f <- post$beta + (m_remain - y_fut)
     
     # Apply the prespecified interim and final decision thresholds
-    if (p_null > gamma_s_1) {
+    if (p_null > gamma_early) {
       
       # Declare early success when the interim efficacy criterion is met
       count_null_post <- count_null_post + 1
@@ -110,13 +111,13 @@ oc_singlearm_binary <- function(
       
     } else {
       
-      if (p_null > gamma_c) {
+      if (p_null > gamma_futility) {
         
         # Continue to the final analysis when neither stopping criterion is met
-        p_final <- 1 - pbeta(theta0_null, alpha_f, beta_f)
+        p_final <- pbeta(theta0_null, alpha_f, beta_f, lower.tail = FALSE)
         
         # Declare success when the final efficacy criterion is met
-        if (p_final > gamma_f_1) {
+        if (p_final > gamma_final) {
           count_null_post <- count_null_post + 1
         }
         

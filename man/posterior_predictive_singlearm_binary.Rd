@@ -12,8 +12,8 @@ posterior_predictive_singlearm_binary(
   beta0 = 0.8,
   theta0_null = 0.2,
   theta0_clin = 0.4,
-  gamma_null = 0.95,
-  gamma_clin = 0.9,
+  gamma_final = 0.95,
+  gamma_clin_final = 0.9,
   S = 10000,
   seed = 666
 )
@@ -31,10 +31,10 @@ posterior_predictive_singlearm_binary(
 
 \item{theta0_clin}{Clinically relevant response-rate threshold, between 0 and 1.}
 
-\item{gamma_null}{Final posterior probability threshold for success
+\item{gamma_final}{Final posterior probability threshold for success
 relative to \code{theta0_null}, between 0 and 1.}
 
-\item{gamma_clin}{Final posterior probability threshold for success
+\item{gamma_clin_final}{Final posterior probability threshold for success
 relative to \code{theta0_clin}, between 0 and 1.}
 
 \item{S}{Positive integer number of Monte Carlo replications.}
@@ -52,11 +52,11 @@ A named list containing:
 \item{p_null}{Posterior probability that the response rate exceeds
 \code{theta0_null}.}
 \item{ppos_null}{Predictive probability that the final posterior
-probability of exceeding \code{theta0_null} is at least
-\code{gamma_null}.}
+probability of exceeding \code{theta0_null} is strictly greater than
+\code{gamma_final}.}
 \item{ppos_clin}{Predictive probability that the final posterior
-probability of exceeding \code{theta0_clin} is at least
-\code{gamma_clin}.}
+probability of exceeding \code{theta0_clin} is strictly greater than
+\code{gamma_clin_final}.}
 }
 }
 \description{
@@ -69,9 +69,10 @@ Let \eqn{a = alpha0 + x_obs} and \eqn{b = beta0 + n_current - x_obs}.
 For every Monte Carlo replication, draw a response rate from Beta(a, b),
 generate the remaining responses, update the posterior, and evaluate the
 two final success criteria. Both predictive probabilities use the same
-simulated future data. The final success comparisons use \code{>=},
-matching the supplied source script. The predictive probabilities are
-Monte Carlo estimates, not exact Beta-binomial sums.
+simulated future data. Final success requires the posterior probability
+to be strictly greater than the corresponding threshold. Equality does
+not constitute success. Predictive probabilities are Monte Carlo
+estimates, not exact Beta-binomial sums.
 }
 \examples{
 result <- posterior_predictive_singlearm_binary(

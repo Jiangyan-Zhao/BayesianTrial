@@ -25,9 +25,9 @@ test_that("operating characteristics match exact probabilities", {
       alpha0 = 0.2,
       beta0 = 0.8,
       theta0_null = 0.20,
-      gamma_s_1 = 0.98,
-      gamma_c = 0.50,
-      gamma_f_1 = 0.95,
+      gamma_early = 0.98,
+      gamma_futility = 0.50,
+      gamma_final = 0.95,
       ntrial = ntrial,
       seed = 666
     )
@@ -142,6 +142,64 @@ test_that("invalid design parameters are rejected", {
       n_current = 20,
       N_total = 40,
       ntrial = 0
+    )
+  )
+})
+
+
+# Verify strict success thresholds and inclusive futility threshold
+test_that("interim and final threshold equality is handled correctly", {
+
+  # All response counts are zero when the true response probability is zero
+  p_interim <- pbeta(
+    0.20, 0.2, 20.8,
+    lower.tail = FALSE
+  )
+
+  p_final <- pbeta(
+    0.20, 0.2, 40.8,
+    lower.tail = FALSE
+  )
+
+  # Equality with early and final success thresholds is not success
+  result <- oc_singlearm_binary(
+    theta_true = 0,
+    n_current = 20,
+    N_total = 40,
+    gamma_early = p_interim,
+    gamma_futility = 0,
+    gamma_final = p_final,
+    ntrial = 100,
+    seed = 123
+  )
+
+  expect_equal(result$early_stop_rate_efficacy, 0)
+  expect_equal(result$early_stop_rate_futility, 0)
+  expect_equal(result$power_null_post, 0)
+
+  # Equality with the futility threshold causes early futility stopping
+  futility_result <- oc_singlearm_binary(
+    theta_true = 0,
+    n_current = 20,
+    N_total = 40,
+    gamma_early = 1,
+    gamma_futility = p_interim,
+    gamma_final = p_final,
+    ntrial = 100,
+    seed = 123
+  )
+
+  expect_equal(futility_result$early_stop_rate_futility, 1)
+
+  # Futility and efficacy thresholds must define disjoint decisions
+  expect_error(
+    oc_singlearm_binary(
+      theta_true = 0.20,
+      n_current = 20,
+      N_total = 40,
+      gamma_early = 0.50,
+      gamma_futility = 0.50,
+      ntrial = 10
     )
   )
 })

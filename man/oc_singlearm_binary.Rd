@@ -11,9 +11,9 @@ oc_singlearm_binary(
   alpha0 = 0.2,
   beta0 = 0.8,
   theta0_null = 0.2,
-  gamma_s_1 = 0.98,
-  gamma_c = 0.5,
-  gamma_f_1 = 0.95,
+  gamma_early = 0.98,
+  gamma_futility = 0.5,
+  gamma_final = 0.95,
   ntrial = 10000,
   seed = 666
 )
@@ -29,14 +29,14 @@ oc_singlearm_binary(
 
 \item{theta0_null}{Historical reference response rate, between 0 and 1.}
 
-\item{gamma_s_1}{Interim posterior probability threshold for early
+\item{gamma_early}{Interim posterior probability threshold for early
 efficacy stopping.}
 
-\item{gamma_c}{Interim posterior probability threshold for futility
+\item{gamma_futility}{Interim posterior probability threshold for futility
 stopping. This applies to the \emph{current posterior probability},
 not to a predictive probability.}
 
-\item{gamma_f_1}{Final posterior probability threshold for success.}
+\item{gamma_final}{Final posterior probability threshold for success.}
 
 \item{ntrial}{Positive integer number of simulated trials.}
 
@@ -61,9 +61,9 @@ and estimate the overall success probability and interim stopping rates.
 For each simulated trial, the interim posterior probability that the
 true response rate exceeds \code{theta0_null} is evaluated. The trial
 declares early success when this probability is strictly greater than
-\code{gamma_s_1}; stops for futility when it is less than or equal to
-\code{gamma_c}; otherwise the final probability is compared strictly
-against \code{gamma_f_1}. The routine draws future data even for trials
+\code{gamma_early}; stops for futility when it is less than or equal to
+\code{gamma_futility}; otherwise the final probability is compared strictly
+against \code{gamma_final}. The routine draws future data even for trials
 that stop early, preserving the random number sequence of the source
 script; future data do not affect decisions in those trials.
 
