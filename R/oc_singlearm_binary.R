@@ -64,18 +64,23 @@ oc_singlearm_binary <- function(
     seed = 666            # Random seed; NULL uses the current RNG state
 ) {
   
-  # Validate inputs
-  stopifnot(
-    theta_true >= 0, theta_true <= 1,
-    n_current >= 0, N_total >= n_current,
-    n_current == as.integer(n_current), N_total == as.integer(N_total),
-    alpha0 > 0, beta0 > 0, theta0_null >= 0, theta0_null <= 1,
-    gamma_early >= 0, gamma_early <= 1,
-    gamma_futility >= 0, gamma_futility <= 1,
-    gamma_final >= 0, gamma_final <= 1,
-    gamma_futility < gamma_early,
-    ntrial >= 1, ntrial == as.integer(ntrial)
-  )
+  # Validate all inputs before changing the RNG state
+  .validate_probability(theta_true, "theta_true")
+  .validate_sample_sizes(n_current, N_total)
+  .validate_prior(alpha0, beta0)
+  .validate_probability(theta0_null, "theta0_null")
+  .validate_probability(gamma_early, "gamma_early")
+  .validate_probability(gamma_futility, "gamma_futility")
+  .validate_probability(gamma_final, "gamma_final")
+  if (gamma_futility >= gamma_early) {
+    stop(
+      "`gamma_futility` must be strictly less than `gamma_early`.",
+      call. = FALSE
+    )
+  }
+  .validate_count(ntrial, "ntrial", min_value = 1L)
+  .validate_seed(seed)
+
   if (!is.null(seed)) set.seed(seed)
   
   # Initialize the remaining sample size and outcome counters

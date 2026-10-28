@@ -66,18 +66,20 @@ posterior_predictive_singlearm_binary <- function(
     S = 10000,           # Number of Monte Carlo replications
     seed = 666           # Random seed
 ) {
-  # Validate inputs
-  stopifnot(
-    length(x_obs) == 1L, x_obs >= 0, x_obs <= n_current,
-    x_obs == as.integer(x_obs),
-    n_current >= 0, N_total >= n_current,
-    n_current == as.integer(n_current), N_total == as.integer(N_total),
-    alpha0 > 0, beta0 > 0, S >= 1, S == as.integer(S),
-    theta0_null >= 0, theta0_null <= 1,
-    theta0_clin >= 0, theta0_clin <= 1,
-    gamma_final >= 0, gamma_final <= 1,
-    gamma_clin_final >= 0, gamma_clin_final <= 1
-  )
+  # Validate all inputs before changing the RNG state
+  .validate_sample_sizes(n_current, N_total)
+  .validate_count(x_obs, "x_obs")
+  if (x_obs > n_current) {
+    stop("`x_obs` must not exceed `n_current`.", call. = FALSE)
+  }
+  .validate_prior(alpha0, beta0)
+  .validate_probability(theta0_null, "theta0_null")
+  .validate_probability(theta0_clin, "theta0_clin")
+  .validate_probability(gamma_final, "gamma_final")
+  .validate_probability(gamma_clin_final, "gamma_clin_final")
+  .validate_count(S, "S", min_value = 1L)
+  .validate_seed(seed)
+
   if (!is.null(seed)) set.seed(seed)
   
   # Update the posterior distribution
