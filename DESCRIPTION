@@ -6,10 +6,16 @@ Authors@R: c(
     person(given = "Rongji", family = "Mu", email = "rjmu@sjtu.edu.cn", role = "aut")
   )
 Maintainer: Jiangyan Zhao <zhaojy2017@126.com>
-Description: Calculate posterior and predictive probabilities and evaluate
-    operating characteristics for Bayesian clinical trial decision rules.
-    The current implementation supports two-stage single-arm trials with
-    binary endpoints, Beta priors, and Monte Carlo simulation.
+Description: Provides tools for evaluating Bayesian decision rules in
+ clinical trials. For two-stage single-arm trials with binary
+ endpoints, computes posterior probabilities under Beta-binomial
+ models, estimates predictive probabilities of meeting prespecified
+ final success criteria, and evaluates type I error rates, statistical
+ power, and early stopping probabilities through Monte Carlo
+ simulation. For methodological background on Bayesian phase II
+ monitoring and predictive probabilities, see Thall and Simon (1994)
+ <doi:10.2307/2533377> and Lee and Liu (2008)
+ <doi:10.1177/1740774508089279>.
 License: GPL (>= 3)
 URL: https://github.com/Jiangyan-Zhao/BayesianTrial
 BugReports: https://github.com/Jiangyan-Zhao/BayesianTrial/issues

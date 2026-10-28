@@ -1,3 +1,4 @@
+
 <!-- README.md is generated from README.Rmd. Please edit README.Rmd only. -->
 
 # BayesianTrial
@@ -6,36 +7,38 @@
 
 **Bayesian decision-making for clinical trials in R.**
 
-BayesianTrial provides posterior inference, predictive probabilities, and
-design operating characteristics. Version 0.1.0 focuses on **two-stage,
-single-arm phase II trials with binary endpoints** (such as objective
-response). The current methods use a Beta prior and a binomial likelihood.
+BayesianTrial provides posterior inference, predictive probabilities,
+and design operating characteristics. Version 0.1.0 focuses on
+**two-stage, single-arm phase II trials with binary endpoints** (such as
+objective response). The current methods use a Beta prior and a binomial
+likelihood.
 
 ## Features and scope
 
-- `posterior_predictive_singlearm_binary()` computes posterior summaries and
-  Monte Carlo predictive probabilities of meeting specified final posterior
-  success criteria.
+- `posterior_predictive_singlearm_binary()` computes posterior summaries
+  and Monte Carlo predictive probabilities of meeting specified final
+  posterior success criteria.
 - `oc_singlearm_binary()` estimates overall trial success and interim
   stopping probabilities by simulating complete two-stage trials.
 
 The operating-characteristics function implements posterior-based early
-stopping and final success. It does **not** use predictive probability as a
-stopping rule or automatically calibrate sample sizes and thresholds.
-Multi-arm trials and other endpoint types are not yet supported.
+stopping and final success. It does **not** use predictive probability
+as a stopping rule or automatically calibrate sample sizes and
+thresholds. Multi-arm trials and other endpoint types are not yet
+supported.
 
 ## Installation
 
 Install the development version from GitHub:
 
-```r
+``` r
 install.packages("remotes")
 remotes::install_github("Jiangyan-Zhao/BayesianTrial")
 ```
 
 To install and access the vignette, use `build_vignettes = TRUE`:
 
-```r
+``` r
 install.packages(c("knitr", "rmarkdown"))
 remotes::install_github(
   "Jiangyan-Zhao/BayesianTrial",
@@ -46,14 +49,14 @@ vignette("singlearm-binary", package = "BayesianTrial")
 
 ## Quick start
 
-Consider a hypothetical phase II trial with a historical response rate of
-20%, an interim analysis after 20 patients, and a maximum sample size of 40.
-Suppose 9 of the first 20 patients have responded. The example uses a
-Beta(0.2, 0.8) prior.
+Consider a hypothetical phase II trial with a historical response rate
+of 20%, an interim analysis after 20 patients, and a maximum sample size
+of 40. Suppose 9 of the first 20 patients have responded. The example
+uses a Beta(0.2, 0.8) prior.
 
 ### Posterior and predictive probabilities
 
-```r
+``` r
 library(BayesianTrial)
 
 result <- posterior_predictive_singlearm_binary(
@@ -76,8 +79,8 @@ result$ppos_null
 result$ppos_clin
 ```
 
-The posterior is Beta(9.2, 11.8). The resulting quantities answer different
-questions:
+The posterior is Beta(9.2, 11.8). The resulting quantities answer
+different questions:
 
 - `p_null` is the current posterior probability that the response rate
   exceeds the historical reference, 0.20.
@@ -87,25 +90,25 @@ questions:
 - `ppos_clin` is an **additional** predictive probability involving a
   clinical target of 0.40 and `gamma_clin_final = 0.90`.
 
-The additional clinical-target criterion is **not** part of the trial success
-rule evaluated by `oc_singlearm_binary()`. When computing power, a true
-response rate of 0.40 is a data-generating scenario, not a separate final
-success requirement.
+The additional clinical-target criterion is **not** part of the trial
+success rule evaluated by `oc_singlearm_binary()`. When computing power,
+a true response rate of 0.40 is a data-generating scenario, not a
+separate final success requirement.
 
 ### Interim decision rule
 
 The posterior-based two-stage design applies these rules:
 
-| Stage | Condition | Action |
-|:--|:--|:--|
-| Interim | `p_null > gamma_early` | Stop for efficacy |
-| Interim | `p_null <= gamma_futility` | Stop for futility |
-| Interim | Otherwise | Continue enrollment |
-| Final | `p_final > gamma_final` | Declare success |
+| Stage   | Condition                  | Action              |
+|:--------|:---------------------------|:--------------------|
+| Interim | `p_null > gamma_early`     | Stop for efficacy   |
+| Interim | `p_null <= gamma_futility` | Stop for futility   |
+| Interim | Otherwise                  | Continue enrollment |
+| Final   | `p_final > gamma_final`    | Declare success     |
 
 Apply the interim rule to the observed data:
 
-```r
+``` r
 gamma_early <- 0.98
 gamma_futility <- 0.50
 gamma_final <- 0.95
@@ -121,16 +124,17 @@ decision <- if (result$p_null > gamma_early) {
 decision
 ```
 
-Success criteria use strict `>` comparisons, and futility uses `<=`.
-The predictive summaries describe the chance of final success **if enrollment
-continued**; they are not stopping criteria in the current OC function.
+Success criteria use strict `>` comparisons, and futility uses `<=`. The
+predictive summaries describe the chance of final success **if
+enrollment continued**; they are not stopping criteria in the current OC
+function.
 
 ### Operating characteristics
 
 The same design can be evaluated under the historical null response rate
 (0.20) and a clinically promising alternative (0.40):
 
-```r
+``` r
 true_rates <- c(0.20, 0.40)
 
 oc_results <- lapply(true_rates, function(theta) {
@@ -162,20 +166,21 @@ rate; at `theta_true = 0.40` it estimates statistical power.
 `early_stop_rate_futility` and `early_stop_rate_efficacy` estimate the
 two interim stopping probabilities.
 
-The results are Monte Carlo estimates and depend on `ntrial` and the seed.
-The function evaluates supplied design settings; it does not optimize them.
+The results are Monte Carlo estimates and depend on `ntrial` and the
+seed. The function evaluates supplied design settings; it does not
+optimize them.
 
 ## Documentation and development
 
-For a more detailed introduction, see the
-[single-arm binary endpoint vignette](vignettes/singlearm-binary.Rmd).
-The repository uses `testthat` and a cross-platform
-[R CMD check workflow](https://github.com/Jiangyan-Zhao/BayesianTrial/actions/workflows/R-CMD-check.yaml).
+For a more detailed introduction, see the [single-arm binary endpoint
+vignette](vignettes/singlearm-binary.Rmd). The repository uses
+`testthat` and a cross-platform [R CMD check
+workflow](https://github.com/Jiangyan-Zhao/BayesianTrial/actions/workflows/R-CMD-check.yaml).
 
 `README.Rmd` is the editable source of this page. After editing it in
 RStudio, regenerate the GitHub-facing `README.md` with:
 
-```r
+``` r
 devtools::build_readme()
 ```
 
@@ -184,4 +189,4 @@ Commit both files together. Bugs and suggestions can be reported through
 
 ## License
 
-GPL (>= 3).
+GPL (\>= 3).
