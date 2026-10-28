@@ -19,29 +19,43 @@ oc_singlearm_binary(
 )
 }
 \arguments{
-\item{theta_true}{True response probability used to generate trial data.}
+\item{theta_true}{Finite true response probability used to generate trial
+data, between 0 and 1.}
 
-\item{n_current}{Planned interim sample size.}
+\item{n_current}{Non-negative integer interim sample size, not exceeding
+\code{N_total}.}
 
-\item{N_total}{Maximum planned sample size.}
+\item{N_total}{Non-negative integer maximum sample size, at least
+\code{n_current}.}
 
-\item{alpha0, beta0}{Positive shape parameters of the Beta prior.}
+\item{alpha0, beta0}{Finite positive shape parameters of the Beta prior;
+their sum must also be finite.}
 
-\item{theta0_null}{Historical reference response rate, between 0 and 1.}
+\item{theta0_null}{Finite historical reference response rate, between
+0 and 1.}
 
-\item{gamma_early}{Interim posterior probability threshold for early
-efficacy stopping.}
+\item{gamma_early}{Finite interim posterior probability threshold for
+early efficacy stopping, between 0 and 1.}
 
-\item{gamma_futility}{Interim posterior probability threshold for futility
-stopping. This applies to the \emph{current posterior probability},
-not to a predictive probability.}
+\item{gamma_futility}{Finite interim posterior probability threshold
+for futility stopping, between 0 and 1 and strictly smaller than
+\code{gamma_early}. This threshold applies to the current posterior
+probability, not to a predictive probability.}
 
-\item{gamma_final}{Final posterior probability threshold for success.}
+\item{gamma_final}{Finite final posterior probability threshold for
+success, between 0 and 1.}
 
 \item{ntrial}{Positive integer number of simulated trials.}
 
 \item{seed}{Integer random seed, or \code{NULL} to use the current random
-number generator state. Providing a seed resets the session RNG state.}
+number generator state. Providing a seed resets the session RNG state.
+\item{power_null_post}{Estimated overall trial success probability.}
+\item{early_stop_rate_futility}{Estimated probability of interim
+  futility stopping.}
+\item{early_stop_rate_efficacy}{Estimated probability of interim
+  efficacy stopping.}
+                    N_total = 40, ntrial = 1000)
+                           N_total = 40, ntrial = 1000)}
 }
 \value{
 A named list containing:
@@ -58,18 +72,25 @@ Simulate the complete two-stage trial under a specified true response rate
 and estimate the overall success probability and interim stopping rates.
 }
 \details{
-For each simulated trial, the interim posterior probability that the
-true response rate exceeds \code{theta0_null} is evaluated. The trial
-declares early success when this probability is strictly greater than
-\code{gamma_early}; stops for futility when it is less than or equal to
-\code{gamma_futility}; otherwise the final probability is compared strictly
-against \code{gamma_final}. The routine draws future data even for trials
-that stop early, preserving the random number sequence of the source
-script; future data do not affect decisions in those trials.
+In each simulated trial, interim binary responses are generated under the
+fixed data-generating rate \code{theta_true}. The Beta posterior is then
+updated, and the posterior probability that the unknown response rate
+exceeds \code{theta0_null} is calculated.
+
+The trial declares early success if this posterior probability is strictly
+greater than \code{gamma_early}, and stops for futility if it is less than
+or equal to \code{gamma_futility}. Otherwise, the trial continues to the
+final analysis, where success requires the final posterior probability
+to be strictly greater than \code{gamma_final}.
+
+For reproducibility of the simulation sequence, outcomes for the remaining
+patients are generated even for trials stopped at interim; these simulated
+outcomes have no effect on their stopping decisions.
 
 The reported \code{power_null_post} is the overall probability of
-declaring trial success. Under a null response rate, it estimates the
-type I error; under an alternative, it estimates statistical power.
+declaring trial success. At a response rate specified under the null
+hypothesis it estimates the type I error rate; at an alternative rate
+it estimates statistical power.
 }
 \examples{
 null_oc <- oc_singlearm_binary(theta_true = 0.20, n_current = 20,

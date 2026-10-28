@@ -19,28 +19,48 @@ posterior_predictive_singlearm_binary(
 )
 }
 \arguments{
-\item{x_obs}{Number of observed responses at the current analysis.}
+\item{x_obs}{Non-negative integer number of observed responses, not
+exceeding \code{n_current}.}
 
-\item{n_current}{Number of evaluated patients at the current analysis.}
+\item{n_current}{Non-negative integer number of evaluated patients at
+the current analysis, not exceeding \code{N_total}.}
 
-\item{N_total}{Maximum planned sample size, including current patients.}
+\item{N_total}{Non-negative integer maximum planned sample size,
+including current patients.}
 
-\item{alpha0, beta0}{Positive shape parameters of the Beta prior.}
+\item{alpha0, beta0}{Finite positive shape parameters of the Beta prior;
+their sum must also be finite.}
 
-\item{theta0_null}{Historical reference response rate, between 0 and 1.}
+\item{theta0_null}{Finite historical reference response rate, between
+0 and 1.}
 
-\item{theta0_clin}{Clinically relevant response-rate threshold, between 0 and 1.}
+\item{theta0_clin}{Finite clinically relevant response-rate threshold,
+between 0 and 1.}
 
-\item{gamma_final}{Final posterior probability threshold for success
+\item{gamma_final}{Finite final posterior probability threshold for success
 relative to \code{theta0_null}, between 0 and 1.}
 
-\item{gamma_clin_final}{Final posterior probability threshold for success
-relative to \code{theta0_clin}, between 0 and 1.}
+\item{gamma_clin_final}{Finite final posterior probability threshold for
+the additional clinical-target criterion relative to
+\code{theta0_clin}, between 0 and 1.}
 
 \item{S}{Positive integer number of Monte Carlo replications.}
 
 \item{seed}{Integer random seed, or \code{NULL} to use the current random
-number generator state. Providing a seed resets the session RNG state.}
+number generator state. Providing a seed resets the session RNG state.
+\item{posterior}{A list with the posterior Beta shape parameters
+  \code{alpha} and \code{beta}.}
+\item{posterior_mean}{Posterior mean of the response rate.}
+\item{posterior_sd}{Posterior standard deviation of the response rate.}
+\item{p_null}{Posterior probability that the response rate exceeds
+  \code{theta0_null}.}
+\item{ppos_null}{Predictive probability that the final posterior
+  probability of exceeding \code{theta0_null} is strictly greater than
+  \code{gamma_final}.}
+\item{ppos_clin}{Predictive probability that the final posterior
+  probability of exceeding \code{theta0_clin} is strictly greater than
+  \code{gamma_clin_final}.}
+x_obs = 9, n_current = 20, N_total = 40, S = 1000}
 }
 \value{
 A named list containing:
@@ -65,14 +85,21 @@ predictive probabilities of meeting two prespecified final-analysis
 success criteria after enrolling the remaining patients.
 }
 \details{
-Let \eqn{a = alpha0 + x_obs} and \eqn{b = beta0 + n_current - x_obs}.
-For every Monte Carlo replication, draw a response rate from Beta(a, b),
-generate the remaining responses, update the posterior, and evaluate the
-two final success criteria. Both predictive probabilities use the same
-simulated future data. Final success requires the posterior probability
-to be strictly greater than the corresponding threshold. Equality does
-not constitute success. Predictive probabilities are Monte Carlo
+Given \code{x_obs} responses among \code{n_current} patients, the updated
+Beta posterior has shape parameters \code{alpha0 + x_obs} and
+\code{beta0 + n_current - x_obs}.
+
+For each Monte Carlo replication, a response rate is drawn from the
+current Beta posterior, future binary responses are simulated, and
+the posterior is updated using the combined data. Both predictive
+probabilities use the same simulated future data. Final success requires
+the corresponding posterior probability to be strictly greater than
+its threshold; equality does not constitute success. These are Monte Carlo
 estimates, not exact Beta-binomial sums.
+
+The clinical-target predictive probability \code{ppos_clin} is an
+additional summary. It is not part of the trial success rule implemented
+by \code{\link{oc_singlearm_binary}}.
 }
 \examples{
 result <- posterior_predictive_singlearm_binary(

@@ -4,29 +4,43 @@
 #' predictive probabilities of meeting two prespecified final-analysis
 #' success criteria after enrolling the remaining patients.
 #'
-#' @param x_obs Number of observed responses at the current analysis.
-#' @param n_current Number of evaluated patients at the current analysis.
-#' @param N_total Maximum planned sample size, including current patients.
-#' @param alpha0,beta0 Positive shape parameters of the Beta prior.
-#' @param theta0_null Historical reference response rate, between 0 and 1.
-#' @param theta0_clin Clinically relevant response-rate threshold, between 0 and 1.
-#' @param gamma_final Final posterior probability threshold for success
+#' @param x_obs Non-negative integer number of observed responses, not
+#'   exceeding \code{n_current}.
+#' @param n_current Non-negative integer number of evaluated patients at
+#'   the current analysis, not exceeding \code{N_total}.
+#' @param N_total Non-negative integer maximum planned sample size,
+#'   including current patients.
+#' @param alpha0,beta0 Finite positive shape parameters of the Beta prior;
+#'   their sum must also be finite.
+#' @param theta0_null Finite historical reference response rate, between
+#'   0 and 1.
+#' @param theta0_clin Finite clinically relevant response-rate threshold,
+#'   between 0 and 1.
+#' @param gamma_final Finite final posterior probability threshold for success
 #'   relative to \code{theta0_null}, between 0 and 1.
-#' @param gamma_clin_final Final posterior probability threshold for success
-#'   relative to \code{theta0_clin}, between 0 and 1.
+#' @param gamma_clin_final Finite final posterior probability threshold for
+#'   the additional clinical-target criterion relative to
+#'   \code{theta0_clin}, between 0 and 1.
 #' @param S Positive integer number of Monte Carlo replications.
 #' @param seed Integer random seed, or \code{NULL} to use the current random
 #'   number generator state. Providing a seed resets the session RNG state.
 #'
 #' @details
-#' Let \eqn{a = alpha0 + x_obs} and \eqn{b = beta0 + n_current - x_obs}.
-#' For every Monte Carlo replication, draw a response rate from Beta(a, b),
-#' generate the remaining responses, update the posterior, and evaluate the
-#' two final success criteria. Both predictive probabilities use the same
-#' simulated future data. Final success requires the posterior probability
-#' to be strictly greater than the corresponding threshold. Equality does
-#' not constitute success. Predictive probabilities are Monte Carlo
+#' Given \code{x_obs} responses among \code{n_current} patients, the updated
+#' Beta posterior has shape parameters \code{alpha0 + x_obs} and
+#' \code{beta0 + n_current - x_obs}.
+#'
+#' For each Monte Carlo replication, a response rate is drawn from the
+#' current Beta posterior, future binary responses are simulated, and
+#' the posterior is updated using the combined data. Both predictive
+#' probabilities use the same simulated future data. Final success requires
+#' the corresponding posterior probability to be strictly greater than
+#' its threshold; equality does not constitute success. These are Monte Carlo
 #' estimates, not exact Beta-binomial sums.
+#'
+#' The clinical-target predictive probability \code{ppos_clin} is an
+#' additional summary. It is not part of the trial success rule implemented
+#' by \code{\link{oc_singlearm_binary}}.
 #'
 #' @return A named list containing:
 #' \describe{
