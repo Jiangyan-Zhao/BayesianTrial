@@ -1,4 +1,3 @@
-
 <!-- README.md is generated from README.Rmd. Please edit README.Rmd only. -->
 
 # BayesianTrial
@@ -7,186 +6,93 @@
 
 **Bayesian decision-making for clinical trials in R.**
 
-BayesianTrial provides posterior inference, predictive probabilities,
-and design operating characteristics. Version 0.1.0 focuses on
-**two-stage, single-arm phase II trials with binary endpoints** (such as
-objective response). The current methods use a Beta prior and a binomial
-likelihood.
-
-## Features and scope
-
-- `posterior_predictive_singlearm_binary()` computes posterior summaries
-  and Monte Carlo predictive probabilities of meeting specified final
-  posterior success criteria.
-- `oc_singlearm_binary()` estimates overall trial success and interim
-  stopping probabilities by simulating complete two-stage trials.
-
-The operating-characteristics function implements posterior-based early
-stopping and final success. It does **not** use predictive probability
-as a stopping rule or automatically calibrate sample sizes and
-thresholds. Multi-arm trials and other endpoint types are not yet
-supported.
+BayesianTrial provides tools for posterior inference, predictive probabilities,
+and operating characteristics of Bayesian clinical trial designs. The current
+version supports two-stage, single-arm phase II trials with binary endpoints
+using Beta-binomial models.
 
 ## Installation
 
-Install the development version from GitHub:
+Install the package from GitHub using [pak](https://pak.r-lib.org/):
 
-``` r
-install.packages("remotes")
-remotes::install_github("Jiangyan-Zhao/BayesianTrial")
+```r
+install.packages("pak")
+pak::pkg_install("Jiangyan-Zhao/BayesianTrial")
 ```
 
-To install and access the vignette, use `build_vignettes = TRUE`:
+## Current functionality
 
-``` r
-install.packages(c("knitr", "rmarkdown"))
-remotes::install_github(
-  "Jiangyan-Zhao/BayesianTrial",
-  build_vignettes = TRUE
-)
-vignette("singlearm-binary", package = "BayesianTrial")
-```
+- `posterior_predictive_singlearm_binary()` calculates posterior summaries
+  and predictive probabilities of meeting final posterior success criteria.
+- `oc_singlearm_binary()` estimates overall trial success, early efficacy
+  stopping, and early futility stopping through Monte Carlo simulation.
 
 ## Quick start
 
-Consider a hypothetical phase II trial with a historical response rate
-of 20%, an interim analysis after 20 patients, and a maximum sample size
-of 40. Suppose 9 of the first 20 patients have responded. The example
-uses a Beta(0.2, 0.8) prior.
+Consider a hypothetical trial with a historical response rate of 20%, an
+interim analysis after 20 patients, and a maximum sample size of 40. Nine
+responses are observed at interim, with a Beta(0.2, 0.8) prior.
 
 ### Posterior and predictive probabilities
 
-``` r
+```r
 library(BayesianTrial)
 
-result <- posterior_predictive_singlearm_binary(
+prob <- posterior_predictive_singlearm_binary(
   x_obs = 9,
   n_current = 20,
   N_total = 40,
   alpha0 = 0.2,
   beta0 = 0.8,
   theta0_null = 0.20,
-  theta0_clin = 0.40,
   gamma_final = 0.95,
-  gamma_clin_final = 0.90,
   S = 10000,
   seed = 666
 )
 
-result$posterior
-result$p_null
-result$ppos_null
-result$ppos_clin
+prob$p_null
+prob$ppos_null
 ```
 
-The posterior is Beta(9.2, 11.8). The resulting quantities answer
-different questions:
-
-- `p_null` is the current posterior probability that the response rate
-  exceeds the historical reference, 0.20.
-- `ppos_null` is the predictive probability that the final posterior
-  probability of exceeding 0.20 is **strictly greater** than
-  `gamma_final = 0.95`.
-- `ppos_clin` is an **additional** predictive probability involving a
-  clinical target of 0.40 and `gamma_clin_final = 0.90`.
-
-The additional clinical-target criterion is **not** part of the trial
-success rule evaluated by `oc_singlearm_binary()`. When computing power,
-a true response rate of 0.40 is a data-generating scenario, not a
-separate final success requirement.
-
-### Interim decision rule
-
-The posterior-based two-stage design applies these rules:
-
-| Stage   | Condition                  | Action              |
-|:--------|:---------------------------|:--------------------|
-| Interim | `p_null > gamma_early`     | Stop for efficacy   |
-| Interim | `p_null <= gamma_futility` | Stop for futility   |
-| Interim | Otherwise                  | Continue enrollment |
-| Final   | `p_final > gamma_final`    | Declare success     |
-
-Apply the interim rule to the observed data:
-
-``` r
-gamma_early <- 0.98
-gamma_futility <- 0.50
-gamma_final <- 0.95
-
-decision <- if (result$p_null > gamma_early) {
-  "Stop for efficacy"
-} else if (result$p_null <= gamma_futility) {
-  "Stop for futility"
-} else {
-  "Continue"
-}
-
-decision
-```
-
-Success criteria use strict `>` comparisons, and futility uses `<=`. The
-predictive summaries describe the chance of final success **if
-enrollment continued**; they are not stopping criteria in the current OC
-function.
+Here, `p_null` is the posterior probability that the response rate exceeds
+0.20, while `ppos_null` is the predictive probability of meeting the final
+posterior success criterion. The function also returns `ppos_clin` for an
+additional clinical-target analysis.
 
 ### Operating characteristics
 
-The same design can be evaluated under the historical null response rate
-(0.20) and a clinically promising alternative (0.40):
-
-``` r
-true_rates <- c(0.20, 0.40)
-
-oc_results <- lapply(true_rates, function(theta) {
-  oc_singlearm_binary(
-    theta_true = theta,
-    n_current = 20,
-    N_total = 40,
-    alpha0 = 0.2,
-    beta0 = 0.8,
-    theta0_null = 0.20,
-    gamma_early = 0.98,
-    gamma_futility = 0.50,
-    gamma_final = 0.95,
-    ntrial = 10000,
-    seed = 666
-  )
-})
-
-data.frame(
-  theta_true = true_rates,
-  do.call(rbind, lapply(oc_results, unlist)),
-  row.names = NULL
+```r
+oc <- oc_singlearm_binary(
+  theta_true = 0.20,
+  n_current = 20,
+  N_total = 40,
+  alpha0 = 0.2,
+  beta0 = 0.8,
+  theta0_null = 0.20,
+  gamma_early = 0.98,
+  gamma_futility = 0.50,
+  gamma_final = 0.95,
+  ntrial = 10000,
+  seed = 666
 )
+
+oc
 ```
 
-`power_null_post` is the overall success probability, including early
-efficacy stopping. At `theta_true = 0.20` it estimates the type I error
-rate; at `theta_true = 0.40` it estimates statistical power.
-`early_stop_rate_futility` and `early_stop_rate_efficacy` estimate the
-two interim stopping probabilities.
+The overall success probability (`power_null_post`) estimates the type I error
+rate when `theta_true = 0.20`. Setting `theta_true = 0.40` evaluates
+statistical power under that alternative. Both early stopping probabilities
+are also returned.
 
-The results are Monte Carlo estimates and depend on `ntrial` and the
-seed. The function evaluates supplied design settings; it does not
-optimize them.
+For more details, see the
+[single-arm binary endpoint vignette](vignettes/singlearm-binary.Rmd).
 
-## Documentation and development
+## Planned extensions
 
-For a more detailed introduction, see the [single-arm binary endpoint
-vignette](vignettes/singlearm-binary.Rmd). The repository uses
-`testthat` and a cross-platform [R CMD check
-workflow](https://github.com/Jiangyan-Zhao/BayesianTrial/actions/workflows/R-CMD-check.yaml).
-
-`README.Rmd` is the editable source of this page. After editing it in
-RStudio, regenerate the GitHub-facing `README.md` with:
-
-``` r
-devtools::build_readme()
-```
-
-Commit both files together. Bugs and suggestions can be reported through
-[GitHub Issues](https://github.com/Jiangyan-Zhao/BayesianTrial/issues).
+Future development will explore predictive-probability-based interim
+monitoring, design calibration, two-arm and multi-arm trials, and additional
+endpoint types, including continuous, count, and time-to-event outcomes.
 
 ## License
 
-GPL (\>= 3).
+GPL (>= 3).
