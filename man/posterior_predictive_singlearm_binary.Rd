@@ -47,20 +47,7 @@ the additional clinical-target criterion relative to
 \item{S}{Positive integer number of Monte Carlo replications.}
 
 \item{seed}{Integer random seed, or \code{NULL} to use the current random
-number generator state. Providing a seed resets the session RNG state.
-\item{posterior}{A list with the posterior Beta shape parameters
-  \code{alpha} and \code{beta}.}
-\item{posterior_mean}{Posterior mean of the response rate.}
-\item{posterior_sd}{Posterior standard deviation of the response rate.}
-\item{p_null}{Posterior probability that the response rate exceeds
-  \code{theta0_null}.}
-\item{ppos_null}{Predictive probability that the final posterior
-  probability of exceeding \code{theta0_null} is strictly greater than
-  \code{gamma_final}.}
-\item{ppos_clin}{Predictive probability that the final posterior
-  probability of exceeding \code{theta0_clin} is strictly greater than
-  \code{gamma_clin_final}.}
-x_obs = 9, n_current = 20, N_total = 40, S = 1000}
+number generator state. Providing a seed resets the session RNG state.}
 }
 \value{
 A named list containing:

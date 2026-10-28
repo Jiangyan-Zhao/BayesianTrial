@@ -48,14 +48,7 @@ success, between 0 and 1.}
 \item{ntrial}{Positive integer number of simulated trials.}
 
 \item{seed}{Integer random seed, or \code{NULL} to use the current random
-number generator state. Providing a seed resets the session RNG state.
-\item{power_null_post}{Estimated overall trial success probability.}
-\item{early_stop_rate_futility}{Estimated probability of interim
-  futility stopping.}
-\item{early_stop_rate_efficacy}{Estimated probability of interim
-  efficacy stopping.}
-                    N_total = 40, ntrial = 1000)
-                           N_total = 40, ntrial = 1000)}
+number generator state. Providing a seed resets the session RNG state.}
 }
 \value{
 A named list containing:
