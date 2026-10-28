@@ -13,199 +13,39 @@ vignette: >
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 library(BayesianTrial)
-RNGkind("Mersenne-Twister", "Inversion")
 ```
 
-## Overview
+## Clinical question and trial design
 
-This guide explains how to use BayesianTrial for a single-arm phase II
-trial with a binary endpoint, such as objective response. The workflow is
-to specify the trial and prior, summarize evidence at an interim analysis,
-calculate the chance of meeting a final success criterion, and evaluate
-the operating characteristics of a complete two-stage design.
+Consider a hypothetical single-arm phase II trial evaluating the objective
+response rate (ORR) of a new treatment. The historical ORR is 20%, while
+40% is considered a promising response rate. The study uses a binary
+endpoint (response or no response) and a Beta(0.2, 0.8) prior.
 
-| Function | Use |
+The trial plans one interim analysis after 20 patients, with a maximum
+sample size of 40. Efficacy and futility decisions are based on the
+posterior probability that the ORR exceeds the historical rate of 20%:
+
+| Analysis | Decision rule |
 |:--|:--|
-| `posterior_predictive_singlearm_binary()` | Analyze observed responses and calculate predictive probabilities. |
-| `oc_singlearm_binary()` | Simulate complete trials under a specified true response rate. |
+| Interim | Stop for efficacy if the posterior probability is > 0.98 |
+| Interim | Stop for futility if the posterior probability is <= 0.50 |
+| Interim | Otherwise, continue enrollment |
+| Final, if continued | Declare success if the posterior probability is > 0.95 |
 
-Code the favorable outcome as a response: larger response probabilities
-represent better outcomes. The model uses a Beta prior and binomial
-sampling with a common response probability. The historical reference
-response rate is supplied as a fixed value.
+These sample sizes and thresholds are illustrative. In practice, they
+should be specified before enrollment and assessed against the trial's
+desired type I error rate and power.
 
-## Specify the trial and observed data
+## Evaluate the design before enrollment
 
-Consider a hypothetical study with a historical response rate of 20%,
-an interim analysis after 20 evaluated patients, and a maximum of 40
-patients. At interim, 9 patients have responded. We use a Beta(0.2, 0.8)
-prior for illustration.
-
-| Argument | Meaning |
-|:--|:--|
-| `x_obs` | Observed responses; an integer from 0 to `n_current`. |
-| `n_current` | Evaluated sample size for an analysis, or planned interim sample size for OC simulation. |
-| `N_total` | Maximum planned sample size, including current patients. |
-| `alpha0`, `beta0` | Positive Beta prior shape parameters; defaults are 0.2 and 0.8. |
-| `theta0_null` | Historical reference response rate. |
-| `seed` | Random seed; the default is 666. Use `NULL` to continue from the current generator state. |
-
-Supply probabilities as proportions between 0 and 1. Sample sizes are
-nonnegative integers, with `N_total >= n_current`.
-
-For a Beta prior, the prior mean is
-`alpha0 / (alpha0 + beta0)` and its concentration is `alpha0 + beta0`.
-The illustrative prior has mean 0.20 and concentration 1. Choose both
-parameters to reflect the prior information appropriate to the study;
-a uniform prior would use `alpha0 = 1, beta0 = 1`.
-
-## Calculate posterior and predictive probabilities
-
-The following call analyzes the interim data and simulates the remaining
-20 patients. It evaluates two possible final criteria: posterior evidence
-for exceeding the historical rate 0.20, and posterior evidence for
-exceeding a clinical target rate 0.40.
-
-```{r posterior-predictive}
-probabilities <- posterior_predictive_singlearm_binary(
-  x_obs = 9,
-  n_current = 20,
-  N_total = 40,
-  alpha0 = 0.2,
-  beta0 = 0.8,
-  theta0_null = 0.20,
-  theta0_clin = 0.40,
-  gamma_final = 0.95,
-  gamma_clin_final = 0.90,
-  S = 10000,
-  seed = 666
-)
-
-summary_values <- unlist(probabilities)
-knitr::kable(
-  data.frame(Output = names(summary_values), Value = unname(summary_values)),
-  digits = 4,
-  row.names = FALSE
-)
-```
-
-The additional arguments control the predictive calculations:
-
-| Argument | Meaning |
-|:--|:--|
-| `theta0_clin` | Response-rate threshold for the additional clinical-target calculation. |
-| `gamma_final` | Required final posterior probability of exceeding `theta0_null`. |
-| `gamma_clin_final` | Required final posterior probability of exceeding `theta0_clin`. |
-| `S` | Number of Monte Carlo replications for predictive probabilities. |
-
-The returned object is a named list:
-
-| Component | Interpretation |
-|:--|:--|
-| `posterior` | Posterior Beta shape parameters, named `alpha` and `beta`. |
-| `posterior_mean` | Posterior mean of the response rate. |
-| `posterior_sd` | Posterior standard deviation of the response rate. |
-| `p_null` | Current posterior probability that the response rate exceeds `theta0_null`. |
-| `ppos_null` | Predictive probability that the final posterior probability of exceeding `theta0_null` is strictly greater than `gamma_final`. |
-| `ppos_clin` | Predictive probability that the final posterior probability of exceeding `theta0_clin` is strictly greater than `gamma_clin_final`. |
-
-Here the posterior is Beta(9.2, 11.8). The current probability of exceeding
-the historical rate is `r sprintf("%.2f%%", 100 * probabilities$p_null)`,
-and the predictive probability of meeting the historical-reference final
-criterion is `r sprintf("%.2f%%", 100 * probabilities$ppos_null)`.
-
-These answer different questions. `p_null` summarizes evidence from the
-current data. A predictive probability averages over possible future
-responses and asks whether the specified final criterion would be met
-after recruitment to `N_total`. The `ppos_clin` output evaluates the
-separate clinical-target criterion.
-
-In particular, `gamma_final = 0.95` is a threshold on the **final posterior
-probability**, rather than a cutoff on the predictive probability itself.
-
-## Use posterior probabilities for trial decisions
-
-Choose stopping thresholds before evaluating trial data. For illustration,
-use 0.98 for interim efficacy stopping, 0.50 for interim futility stopping,
-and 0.95 for final success, all relative to the historical rate 0.20.
-
-| Analysis | Rule | Action |
-|:--|:--|:--|
-| Interim | Current posterior probability > 0.98 | Stop for efficacy. |
-| Interim | Current posterior probability <= 0.50 | Stop for futility. |
-| Interim | 0.50 < current posterior probability <= 0.98 | Continue. |
-| Final, if continued | Final posterior probability > 0.95 | Declare success. |
-
-Apply the interim rule to the calculated `p_null`:
-
-```{r interim-decision}
-gamma_early <- 0.98
-gamma_futility <- 0.50
-gamma_final <- 0.95
-
-interim_decision <- if (probabilities$p_null > gamma_early) {
-  "Stop for efficacy"
-} else if (probabilities$p_null <= gamma_futility) {
-  "Stop for futility"
-} else {
-  "Continue"
-}
-interim_decision
-```
-
-In this example, the current evidence supports early efficacy stopping.
-The predictive outputs still describe what could happen if recruitment
-continued to the maximum sample size. They are additional summaries and
-are not part of the posterior stopping rule illustrated here.
-
-For a trial that continues, update the analysis using the final observed
-counts. For example, suppose there are 13 responses among 40 patients:
-
-```{r final-analysis}
-final_result <- posterior_predictive_singlearm_binary(
-  x_obs = 13,
-  n_current = 40,
-  N_total = 40,
-  alpha0 = 0.2,
-  beta0 = 0.8,
-  theta0_null = 0.20,
-  gamma_final = gamma_final,
-  S = 1,
-  seed = 666
-)
-
-final_result$p_null
-final_result$p_null > gamma_final
-```
-
-Posterior summaries use the Beta distribution directly. With no patients
-remaining, the predictive success indicators are also deterministic, so
-one replication suffices for this final-analysis call.
-
-## Evaluate operating characteristics
-
-Use `oc_singlearm_binary()` to evaluate the complete two-stage posterior
-decision rule under a specified true response rate. Its design-specific
-arguments are:
-
-| Argument | Meaning |
-|:--|:--|
-| `theta_true` | True response rate used to generate trial data. |
-| `gamma_early` | Interim posterior threshold for early efficacy stopping. |
-| `gamma_futility` | Interim posterior threshold for futility stopping. |
-| `gamma_final` | Final posterior threshold for success. |
-| `ntrial` | Number of simulated complete trials. |
-
-The argument `gamma_futility` applies to the current posterior probability, not
-to a predictive probability. The argument `gamma_final` specifies the
-final posterior success criterion.
-
-The following example evaluates the historical null rate 0.20 and an
-alternative rate 0.40 using the prior, sample sizes, and stopping
-thresholds specified above:
+Use `oc_singlearm_binary()` to estimate the operating characteristics
+of this two-stage design. We consider a true ORR of 20% for the null
+scenario and 40% for the alternative scenario.
 
 ```{r operating-characteristics}
 true_rates <- c(0.20, 0.40)
+
 oc_results <- lapply(true_rates, function(theta) {
   oc_singlearm_binary(
     theta_true = theta,
@@ -214,72 +54,98 @@ oc_results <- lapply(true_rates, function(theta) {
     alpha0 = 0.2,
     beta0 = 0.8,
     theta0_null = 0.20,
-    gamma_early = gamma_early,
-    gamma_futility = gamma_futility,
-    gamma_final = gamma_final,
+    gamma_early = 0.98,
+    gamma_futility = 0.50,
+    gamma_final = 0.95,
     ntrial = 10000,
     seed = 666
   )
 })
 
 oc_table <- data.frame(
-  theta_true = true_rates,
+  true_ORR = true_rates,
   do.call(rbind, lapply(oc_results, unlist)),
   row.names = NULL
 )
-knitr::kable(oc_table, digits = 4)
+knitr::kable(oc_table, digits = 3)
 ```
 
-The returned quantities are probabilities between 0 and 1:
+The `power_null_post` column gives the overall probability of declaring
+the trial successful, including early efficacy stopping. It estimates
+the **type I error rate** when the true ORR is 20%, and **power** when
+the true ORR is 40%. The two remaining columns give the probabilities
+of stopping early for futility or efficacy.
 
-| Component | Interpretation |
-|:--|:--|
-| `power_null_post` | Overall trial success probability, including early success. Under a null response rate it estimates type I error; under an alternative it estimates power. |
-| `early_stop_rate_futility` | Probability of stopping for futility at interim. |
-| `early_stop_rate_efficacy` | Probability of stopping for efficacy at interim. |
+The 40% rate is used here to evaluate power, **not** as an additional
+requirement for declaring trial success. If the operating characteristics
+do not meet the design targets, revise the sample sizes or thresholds
+and evaluate the design again. The function evaluates specified designs;
+it does not calibrate them automatically.
 
-Compare the success estimate under the null with the selected type I error
-target, and the estimate under the alternative with the selected power
-target. The early stopping probabilities describe how often the trial is
-expected to terminate at interim for each reason.
+## Analyze the interim results
 
-`theta_true = 0.40` in an OC calculation specifies the data-generating
-scenario. `theta0_clin = 0.40` in a predictive calculation specifies a
-response-rate threshold for a separate final claim. The two arguments
-serve different purposes. The current OC function evaluates the
-historical-reference posterior rule; it does not use `ppos_null` or
-`ppos_clin` as stopping criteria.
+Suppose 9 of the first 20 patients respond. Use
+`posterior_predictive_singlearm_binary()` to summarize the current
+evidence and estimate the probability of meeting the final success
+criterion if recruitment continues to 40 patients.
 
-Both functions use strict `>` comparisons for success criteria and `<=`
-for the interim futility criterion. A posterior probability equal to a
-success threshold does not count as success.
+```{r interim-analysis}
+result <- posterior_predictive_singlearm_binary(
+  x_obs = 9,
+  n_current = 20,
+  N_total = 40,
+  alpha0 = 0.2,
+  beta0 = 0.8,
+  theta0_null = 0.20,
+  gamma_final = 0.95,
+  S = 10000,
+  seed = 666
+)
 
-## Adapt the settings and control simulation precision
-
-To analyze another study, replace the observed counts, sample sizes,
-historical reference rate, prior parameters, and final success criteria.
-To evaluate another two-stage design, change the corresponding inputs to
-`oc_singlearm_binary()` and compare its operating characteristics with
-the study's design targets. The function evaluates supplied sample sizes
-and thresholds; it does not select or calibrate them automatically.
-
-The OC implementation has one interim analysis and one final analysis.
-The posterior and predictive helper analyzes the supplied current counts
-and remaining sample size.
-
-Increasing `S` improves the Monte Carlo precision of predictive
-probabilities. Increasing `ntrial` improves the precision of estimated
-operating characteristics. These simulation sizes do not affect the
-analytical posterior mean, standard deviation, or `p_null`.
-
-For example, the Monte Carlo standard error of the null success estimate
-can be approximated by:
-
-```{r monte-carlo-precision}
-p_hat <- oc_results[[1]]$power_null_post
-sqrt(p_hat * (1 - p_hat) / 10000)
+data.frame(
+  Measure = c("Current posterior probability",
+              "Predictive probability of final success"),
+  Probability = round(c(result$p_null, result$ppos_null), 3)
+)
 ```
 
-Providing the same seed and settings makes a calculation repeatable.
-Choose another seed for another simulation run, or use `seed = NULL`
-to continue from the current generator state.
+The posterior distribution is Beta(9.2, 11.8). Here:
+
+- `p_null` is the posterior probability that the ORR exceeds 20%,
+  based on the 20 observed patients.
+- `ppos_null` is the predictive probability that the **final**
+  posterior probability will exceed 0.95, assuming enrollment continues
+  to 40 patients.
+
+Apply the prespecified **posterior** stopping rules to the observed data:
+
+```{r interim-decision}
+decision <- if (result$p_null > 0.98) {
+  "Stop for efficacy"
+} else if (result$p_null <= 0.50) {
+  "Stop for futility"
+} else {
+  "Continue to the final analysis"
+}
+
+decision
+```
+
+In this example, the trial stops early for efficacy. The predictive
+probability is supplementary: it does not determine stopping in the
+current design. For a trial that continues, the final decision is based
+on whether the posterior probability of exceeding 20% is strictly
+greater than 0.95.
+
+## Additional clinical-target assessment
+
+The predictive function also reports `ppos_clin`, the probability of
+meeting a separate posterior criterion for a clinically relevant ORR
+(`theta0_clin`, default 0.40). Its final posterior threshold is
+`gamma_clin_final` (default 0.90). This output can be used as an
+additional summary but is **not** included in the success and stopping
+rules evaluated by `oc_singlearm_binary()`.
+
+To adapt the example to another study, specify its historical response
+rate, prior, interim and maximum sample sizes, and decision thresholds.
+Reassess operating characteristics before using the design in a trial.
