@@ -47,7 +47,8 @@ prob <- posterior_predictive_singlearm_binary(
   theta0_null = 0.20,
   gamma_final = 0.95,
   S = 10000,
-  seed = 666
+  seed = 666,
+  type = "both"
 )
 
 prob$p_null
@@ -57,7 +58,9 @@ prob$ppos_null
 Here, `p_null` is the posterior probability that the response rate exceeds
 0.20, while `ppos_null` is the predictive probability of meeting the final
 posterior success criterion. The function also returns `ppos_clin` for an
-additional clinical-target analysis.
+additional clinical-target analysis. Set `type = "posterior"` to return
+only current posterior summaries, or `type = "predictive"` to return only
+predictive probabilities. The default `type = "both"` returns both.
 
 ### Operating characteristics
 
