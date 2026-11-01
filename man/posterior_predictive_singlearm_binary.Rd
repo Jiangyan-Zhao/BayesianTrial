@@ -2,7 +2,7 @@
 % Please edit documentation in R/posterior_predictive_singlearm_binary.R
 \name{posterior_predictive_singlearm_binary}
 \alias{posterior_predictive_singlearm_binary}
-\title{Posterior and Predictive Probabilities for a Single-Arm Binary Trial}
+\title{Posterior and Predictive Probabilities for a Single-Arm Phase II Trial with a Binary Endpoint}
 \usage{
 posterior_predictive_singlearm_binary(
   x_obs,
@@ -19,81 +19,111 @@ posterior_predictive_singlearm_binary(
 )
 }
 \arguments{
-\item{x_obs}{Non-negative integer number of observed responses, not
-exceeding \code{n_current}.}
+\item{x_obs}{Number of patients with an observed response among the \code{n_current}
+patients with evaluable outcomes; an integer from 0 to \code{n_current}.}
 
-\item{n_current}{Non-negative integer number of evaluated patients at
-the current analysis, not exceeding \code{N_total}.}
+\item{n_current}{Number of patients with evaluable binary efficacy outcomes at the current
+analysis; a non-negative integer not exceeding \code{N_total}.}
 
-\item{N_total}{Non-negative integer maximum planned sample size,
-including current patients.}
+\item{N_total}{Planned maximum number of evaluable patients, including those assessed at
+the current analysis; a non-negative integer at least as large as
+\code{n_current}.}
 
-\item{alpha0, beta0}{Finite positive shape parameters of the Beta prior;
-their sum must also be finite.}
+\item{alpha0, beta0}{Positive, finite shape parameters of the Beta prior for the response rate.
+Their sum must also be finite.}
 
-\item{theta0_null}{Finite historical reference response rate, between
-0 and 1.}
+\item{theta0_null}{Prespecified unacceptable or historical reference response rate used as the
+primary efficacy benchmark; a probability between 0 and 1 (inclusive).}
 
-\item{theta0_clin}{Finite clinically relevant response-rate threshold,
-between 0 and 1.}
+\item{theta0_clin}{Prespecified clinically meaningful target response rate for a supplementary
+predictive assessment; a probability between 0 and 1 (inclusive). This
+target is not an additional requirement for the primary trial success
+decision.}
 
-\item{gamma_final}{Finite final posterior probability threshold for success
-relative to \code{theta0_null}, between 0 and 1.}
+\item{gamma_final}{Posterior probability cutoff for declaring a positive trial result at the
+final analysis relative to \code{theta0_null}; a probability between 0 and
+1 (inclusive).}
 
-\item{gamma_clin_final}{Finite final posterior probability threshold for
-the additional clinical-target criterion relative to
-\code{theta0_clin}, between 0 and 1.}
+\item{gamma_clin_final}{Posterior probability cutoff for the supplementary final-analysis criterion
+relative to \code{theta0_clin}; a probability between 0 and 1 (inclusive).}
 
-\item{S}{Positive integer number of Monte Carlo replications.}
+\item{S}{Positive integer number of Monte Carlo replications used to estimate the
+predictive probabilities.}
 
-\item{seed}{Integer random seed, or \code{NULL} to use the current random
-number generator state. Providing a seed resets the session RNG state.}
+\item{seed}{Integer random seed, or \code{NULL} to use the current random number
+generator state. A non-\code{NULL} value calls \code{set.seed()} and
+changes the session's random number generator state.}
 }
 \value{
 A named list containing:
 \describe{
-\item{posterior}{A list with the posterior Beta shape parameters
-\code{alpha} and \code{beta}.}
-\item{posterior_mean}{Posterior mean of the response rate.}
-\item{posterior_sd}{Posterior standard deviation of the response rate.}
-\item{p_null}{Posterior probability that the response rate exceeds
+\item{posterior}{A list containing the shape parameters \code{alpha} and \code{beta} of the
+current Beta posterior.}
+\item{posterior_mean}{Posterior mean of the treatment response rate at the current analysis.}
+\item{posterior_sd}{Posterior standard deviation of the treatment response rate at the current
+analysis.}
+\item{p_null}{Current posterior probability that the response rate exceeds
 \code{theta0_null}.}
-\item{ppos_null}{Predictive probability that the final posterior
-probability of exceeding \code{theta0_null} is strictly greater than
-\code{gamma_final}.}
-\item{ppos_clin}{Predictive probability that the final posterior
-probability of exceeding \code{theta0_clin} is strictly greater than
-\code{gamma_clin_final}.}
+\item{ppos_null}{Posterior predictive probability of satisfying the final efficacy criterion
+based on \code{theta0_null} and \code{gamma_final}, conditional on the
+observed data and completing the planned sample size.}
+\item{ppos_clin}{Supplementary posterior predictive probability of satisfying the final
+criterion based on \code{theta0_clin} and \code{gamma_clin_final}.}
 }
 }
 \description{
-Calculate the Beta-binomial posterior distribution and the posterior
-predictive probabilities of meeting two prespecified final-analysis
-success criteria after enrolling the remaining patients.
+Summarize posterior evidence of treatment activity from observed binary
+efficacy outcomes in a single-arm phase II trial, and estimate the
+predictive probabilities of meeting prespecified posterior efficacy
+criteria at the planned final analysis.
 }
 \details{
-Given \code{x_obs} responses among \code{n_current} patients, the updated
-Beta posterior has shape parameters \code{alpha0 + x_obs} and
-\code{beta0 + n_current - x_obs}.
+Let \eqn{\theta} denote the unknown treatment response rate, with a
+\eqn{\mathrm{Beta}(\alpha_0,\beta_0)} prior. Given \eqn{x} responses among
+\eqn{n} patients with evaluable outcomes, its posterior distribution is
+\eqn{\mathrm{Beta}(\alpha_0+x,\beta_0+n-x)}. The quantity \code{p_null} is
+the current posterior probability that \eqn{\theta} exceeds the reference
+rate \code{theta0_null}.
 
-For each Monte Carlo replication, a response rate is drawn from the
-current Beta posterior, future binary responses are simulated, and
-the posterior is updated using the combined data. Both predictive
-probabilities use the same simulated future data. Final success requires
-the corresponding posterior probability to be strictly greater than
-its threshold; equality does not constitute success. These are Monte Carlo
-estimates, not exact Beta-binomial sums.
+To assess the prospect of a positive result after completing the planned
+enrollment, the function simulates responses for the \code{N_total -
+n_current} remaining patients from the Beta-binomial posterior predictive
+distribution. In each replication, the final posterior is updated using the
+observed and simulated responses, and the prespecified final-analysis
+criterion is evaluated. The proportion of replications meeting the
+criterion is reported as \code{ppos_null}. Both predictive assessments use
+the same simulated future outcomes.
 
-The clinical-target predictive probability \code{ppos_clin} is an
-additional summary. It is not part of the trial success rule implemented
-by \code{\link{oc_singlearm_binary}}.
+The predictive probability is conditional on the current data and on
+reaching \code{N_total} evaluable patients. It is not the frequentist
+statistical power of the trial design and does not incorporate interim
+stopping decisions. Final-analysis success requires the posterior
+probability to be strictly greater than the corresponding cutoff; equality
+does not satisfy the criterion.
+
+The additional quantity \code{ppos_clin} evaluates the probability of
+meeting a separate posterior criterion for the clinically meaningful target
+rate \code{theta0_clin}. It is a supplementary measure and is not included
+in the trial success rule evaluated by \code{\link{oc_singlearm_binary}}.
+Predictive probabilities are estimated by Monte Carlo simulation rather
+than exact Beta-binomial summation.
+}
+\references{
+Lee, J. J., and Liu, D. D. (2008). A predictive probability design for
+phase II cancer clinical trials. \emph{Clinical Trials}, 5, 93--106.
+\doi{10.1177/1740774508089279}.
+
+Zhou, H., Lee, J. J., and Yuan, Y. (2017). BOP2: Bayesian optimal design
+for phase II clinical trials with simple and complex endpoints.
+\emph{Statistics in Medicine}, 36, 3302--3314. \doi{10.1002/sim.7338}.
 }
 \examples{
-result <- posterior_predictive_singlearm_binary(
-  x_obs = 9, n_current = 20, N_total = 40, S = 1000
+interim <- posterior_predictive_singlearm_binary(
+  x_obs = 9, n_current = 20, N_total = 40,
+  theta0_null = 0.20, gamma_final = 0.95, S = 1000
 )
-result$p_null
-result$ppos_null
+interim$p_null
+interim$ppos_null
 }
 \seealso{
 \code{\link{oc_singlearm_binary}}
