@@ -31,9 +31,20 @@
 #'   predictive probabilities.
 #' @param seed Integer random seed, or \code{NULL} to use the current random number
 #'   generator state. A non-\code{NULL} value calls \code{set.seed()} and
-#'   changes the session's random number generator state.
+#'   changes the session's random number generator state when predictive
+#'   probabilities are requested. It is not used for posterior-only output.
+#' @param type Character string specifying which results to return:
+#'   \code{"posterior"} for current posterior summaries,
+#'   \code{"predictive"} for final-analysis predictive probabilities, or
+#'   \code{"both"} (the default) for all results.
 #'
 #' @details
+#' With \code{type = "posterior"}, the function does not perform Monte
+#' Carlo simulation or change the random number generator state.
+#' With \code{type = "predictive"}, only the two final-analysis
+#' predictive probabilities are returned. The default
+#' \code{type = "both"} preserves the full output of earlier versions.
+#'
 #' Let \eqn{\theta} denote the unknown treatment response rate, with a
 #' \eqn{\mathrm{Beta}(\alpha_0,\beta_0)} prior. Given \eqn{x} responses among
 #' \eqn{n} patients with evaluable outcomes, its posterior distribution is
@@ -64,7 +75,10 @@
 #' Predictive probabilities are estimated by Monte Carlo simulation rather
 #' than exact Beta-binomial summation.
 #'
-#' @return A named list containing:
+#' @return A named list whose components depend on \code{type}.
+#' \code{"posterior"} returns the four posterior components;
+#' \code{"predictive"} returns the two predictive components; and
+#' \code{"both"} returns all six components, as described below:
 #' \describe{
 #'   \item{posterior}{A list containing the shape parameters \code{alpha} and \code{beta}
 #'     of the current Beta posterior.}
@@ -100,6 +114,13 @@
 #' )
 #' interim$p_null
 #' interim$ppos_null
+#' posterior_only <- posterior_predictive_singlearm_binary(
+#'   x_obs = 9, n_current = 20, N_total = 40, type = "posterior"
+#' )
+#' predictive_only <- posterior_predictive_singlearm_binary(
+#'   x_obs = 9, n_current = 20, N_total = 40,
+#'   type = "predictive", S = 1000
+#' )
 #' @importFrom stats pbeta rbeta rbinom
 #' @export
 
@@ -114,8 +135,12 @@ posterior_predictive_singlearm_binary <- function(
     gamma_final = 0.95,   # Final posterior probability threshold for exceeding the historical rate
     gamma_clin_final = 0.90,   # Final posterior probability threshold for exceeding the clinical target rate
     S = 10000,           # Number of Monte Carlo replications
-    seed = 666           # Random seed
+    seed = 666,          # Random seed
+    type = c("both", "posterior", "predictive")  # Requested output
 ) {
+  # Select the requested output before validating the inputs
+  type <- match.arg(type)
+
   # Validate all inputs before changing the RNG state
   .validate_sample_sizes(n_current, N_total)
   .validate_count(x_obs, "x_obs")
@@ -130,8 +155,6 @@ posterior_predictive_singlearm_binary <- function(
   .validate_count(S, "S", min_value = 1L)
   .validate_seed(seed)
 
-  if (!is.null(seed)) set.seed(seed)
-  
   # Update the posterior distribution
   m_remain <- N_total - n_current  # Number of remaining patients
   post <- list(
@@ -139,14 +162,28 @@ posterior_predictive_singlearm_binary <- function(
     beta  = beta0 + (n_current - x_obs)    # Second shape parameter of the posterior
   )
   
-  # Compute the posterior mean and standard deviation
-  post_mean <- post$alpha / (post$alpha + post$beta)
-  post_sd <- sqrt(post$alpha * post$beta /
-                    ((post$alpha + post$beta)^2 * (post$alpha + post$beta + 1)))
-  
-  # Compute the current posterior probability
-  p_null <- pbeta(theta0_null, post$alpha, post$beta, lower.tail = FALSE)
-  
+  # Return exact posterior summaries without running predictive simulations
+  if (type != "predictive") {
+    post_mean <- post$alpha / (post$alpha + post$beta)
+    post_sd <- sqrt(post$alpha * post$beta /
+                      ((post$alpha + post$beta)^2 * (post$alpha + post$beta + 1)))
+    p_null <- pbeta(theta0_null, post$alpha, post$beta, lower.tail = FALSE)
+
+    posterior_result <- list(
+      posterior = post,
+      posterior_mean = post_mean,
+      posterior_sd = post_sd,
+      p_null = p_null
+    )
+
+    if (type == "posterior") {
+      return(posterior_result)
+    }
+  }
+
+  # Set the random seed only when predictive simulation is required
+  if (!is.null(seed)) set.seed(seed)
+
   # Estimate predictive probabilities for both final success criteria
   success_null <- numeric(S)
   success_clin <- numeric(S)
@@ -176,13 +213,15 @@ posterior_predictive_singlearm_binary <- function(
   ppos_null <- mean(success_null)
   ppos_clin <- mean(success_clin)
   
-  # Return posterior summaries and decision probabilities
-  list(
-    posterior = post,           # Shape parameters of the Beta posterior
-    posterior_mean = post_mean, # Posterior mean
-    posterior_sd = post_sd,     # Posterior standard deviation
-    p_null = p_null,            # Posterior probability of exceeding the historical rate
-    ppos_null = ppos_null,      # Predictive probability of meeting the historical-rate success criterion
-    ppos_clin = ppos_clin       # Predictive probability of meeting the clinical-target success criterion
+  # Return only the requested components, retaining the original names
+  predictive_result <- list(
+    ppos_null = ppos_null,
+    ppos_clin = ppos_clin
   )
+
+  if (type == "predictive") {
+    return(predictive_result)
+  }
+
+  c(posterior_result, predictive_result)
 }
