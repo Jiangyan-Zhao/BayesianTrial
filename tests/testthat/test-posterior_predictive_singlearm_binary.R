@@ -43,7 +43,8 @@ test_that("predictive probabilities match exact calculations", {
     n_current = 20,
     N_total = 40,
     S = S,
-    seed = 666
+    seed = 666,
+    type = "both"
   )
 
   # Current posterior distribution: Beta(9.2, 11.8)
@@ -130,7 +131,8 @@ test_that("predictive outcome is deterministic at final analysis", {
     n_current = 40,
     N_total = 40,
     S = 1,
-    seed = 666
+    seed = 666,
+    type = "both"
   )
 
   # No future patients remain at the final analysis
@@ -208,7 +210,8 @@ test_that("equality with final success thresholds is not success", {
     gamma_final = p_boundary_null,
     gamma_clin_final = p_boundary_clin,
     S = 1,
-    seed = 666
+    seed = 666,
+    type = "both"
   )
 
   expect_equal(result$p_null, p_boundary_null)
@@ -217,13 +220,17 @@ test_that("equality with final success thresholds is not success", {
 })
 
 # Verify selectable posterior and predictive outputs
-test_that("type selects the requested results and preserves defaults", {
+test_that("type selects the requested results and defaults to posterior", {
   base <- list(x_obs = 9, n_current = 20, N_total = 40, S = 1000, seed = 666)
-  all_results <- do.call(posterior_predictive_singlearm_binary, base)
+  default_result <- do.call(posterior_predictive_singlearm_binary, base)
+  all_results <- do.call(posterior_predictive_singlearm_binary,
+                         c(base, list(type = "both")))
   posterior <- do.call(posterior_predictive_singlearm_binary,
                       c(base, list(type = "posterior")))
   predictive <- do.call(posterior_predictive_singlearm_binary,
                        c(base, list(type = "predictive")))
+
+  expect_identical(default_result, posterior)
 
   expect_named(posterior, c("posterior", "posterior_mean",
                             "posterior_sd", "p_null"))
