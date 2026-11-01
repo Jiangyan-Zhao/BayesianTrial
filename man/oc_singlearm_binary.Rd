@@ -20,9 +20,9 @@ oc_singlearm_binary(
 }
 \arguments{
 \item{theta_true}{Assumed true treatment response rate for generating trial outcomes; a
-probability between 0 and 1 (inclusive). Specify the null-scenario rate to
-assess the type I error rate or a clinically promising alternative rate to
-assess power.}
+probability between 0 and 1 (inclusive). Specify the null-scenario rate
+to assess the type I error rate or a clinically promising alternative
+rate to assess power.}
 
 \item{n_current}{Planned number of patients with evaluable outcomes at the single interim
 analysis; a non-negative integer not exceeding \code{N_total}. A
@@ -31,11 +31,12 @@ conventional two-stage design requires \code{0 < n_current < N_total}.}
 \item{N_total}{Planned maximum number of evaluable patients; a non-negative integer at
 least as large as \code{n_current}.}
 
-\item{alpha0, beta0}{Positive, finite shape parameters of the Beta prior for the response rate.
-Their sum must also be finite.}
+\item{alpha0, beta0}{Positive, finite shape parameters of the Beta prior for the response
+rate. Their sum must also be finite.}
 
-\item{theta0_null}{Prespecified unacceptable or historical reference response rate used as the
-primary efficacy benchmark; a probability between 0 and 1 (inclusive).}
+\item{theta0_null}{Prespecified unacceptable or historical reference response rate used as
+the primary efficacy benchmark; a probability between 0 and 1
+(inclusive).}
 
 \item{gamma_early}{Interim posterior probability cutoff for early declaration of efficacy; a
 probability between 0 and 1 (inclusive). An early positive result is
@@ -45,11 +46,12 @@ strictly greater than this cutoff.}
 \item{gamma_futility}{Interim posterior probability cutoff for stopping due to futility; a
 probability between 0 and 1 (inclusive) and strictly less than
 \code{gamma_early}. Futility stopping occurs if the posterior probability
-of exceeding \code{theta0_null} is less than or equal to this cutoff. This
-is not a predictive probability cutoff.}
+of exceeding \code{theta0_null} is less than or equal to this cutoff.
+This is not a predictive probability cutoff.}
 
 \item{gamma_final}{Posterior probability cutoff for declaring a positive result at the final
-analysis if the trial continues; a probability between 0 and 1 (inclusive).}
+analysis if the trial continues; a probability between 0 and 1
+(inclusive).}
 
 \item{ntrial}{Positive integer number of independently simulated trials.}
 
@@ -61,12 +63,13 @@ changes the session's random number generator state.}
 A named list containing:
 \describe{
 \item{power_null_post}{Estimated overall probability of declaring a positive trial result,
-including early efficacy stopping. Interpreted as type I error probability
-under a null scenario or as power under a specified alternative.}
-\item{early_stop_rate_futility}{Estimated probability of stopping the trial at the interim analysis for
-futility.}
-\item{early_stop_rate_efficacy}{Estimated probability of stopping the trial at the interim analysis for
-efficacy.}
+including early efficacy stopping. Interpreted as type I error
+probability under a null scenario or as power under a specified
+alternative.}
+\item{early_stop_rate_futility}{Estimated probability of stopping the trial at the interim analysis
+for futility.}
+\item{early_stop_rate_efficacy}{Estimated probability of stopping the trial at the interim analysis
+for efficacy.}
 }
 }
 \description{
@@ -110,19 +113,6 @@ sample sizes for computational purposes, but a genuine two-stage design has
 remaining patients are also simulated after an interim stop; these outcomes
 are ignored in the trial decision.
 }
-\references{
-Thall, P. F., and Simon, R. M. (1994). Practical Bayesian guidelines for
-phase IIB clinical trials. \emph{Biometrics}, 50, 337--349.
-\doi{10.2307/2533377}.
-
-Lee, J. J., and Liu, D. D. (2008). A predictive probability design for
-phase II cancer clinical trials. \emph{Clinical Trials}, 5, 93--106.
-\doi{10.1177/1740774508089279}.
-
-Zhou, H., Lee, J. J., and Yuan, Y. (2017). BOP2: Bayesian optimal design
-for phase II clinical trials with simple and complex endpoints.
-\emph{Statistics in Medicine}, 36, 3302--3314. \doi{10.1002/sim.7338}.
-}
 \examples{
 null_oc <- oc_singlearm_binary(
   theta_true = 0.20, n_current = 20, N_total = 40,
@@ -134,6 +124,19 @@ alternative_oc <- oc_singlearm_binary(
 )
 null_oc$power_null_post  # Type I error probability at the null rate
 alternative_oc$power_null_post  # Power at the alternative rate
+}
+\references{
+Thall, P. F., and Simon, R. M. (1994). Practical Bayesian guidelines for
+phase IIB clinical trials. \emph{Biometrics}, 50, 337--349.
+\doi{10.2307/2533377}.
+
+Lee, J. J., and Liu, D. D. (2008). A predictive probability design for
+phase II cancer clinical trials. \emph{Clinical Trials}, 5, 93--106.
+\doi{10.1177/1740774508089279}.
+
+Zhao, J., and Mu, R. (2026).
+Introduction to Bayesian Decision Theory and Its Application
+in Medical Research. Manuscript in preparation (in Chinese).
 }
 \seealso{
 \code{\link{posterior_predictive_singlearm_binary}}

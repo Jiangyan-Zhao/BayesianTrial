@@ -30,23 +30,25 @@ analysis; a non-negative integer not exceeding \code{N_total}.}
 the current analysis; a non-negative integer at least as large as
 \code{n_current}.}
 
-\item{alpha0, beta0}{Positive, finite shape parameters of the Beta prior for the response rate.
-Their sum must also be finite.}
+\item{alpha0, beta0}{Positive, finite shape parameters of the Beta prior for the response
+rate. Their sum must also be finite.}
 
-\item{theta0_null}{Prespecified unacceptable or historical reference response rate used as the
-primary efficacy benchmark; a probability between 0 and 1 (inclusive).}
+\item{theta0_null}{Prespecified unacceptable or historical reference response rate used as
+the primary efficacy benchmark; a probability between 0 and 1
+(inclusive).}
 
-\item{theta0_clin}{Prespecified clinically meaningful target response rate for a supplementary
-predictive assessment; a probability between 0 and 1 (inclusive). This
-target is not an additional requirement for the primary trial success
-decision.}
+\item{theta0_clin}{Prespecified clinically meaningful target response rate for a
+supplementary predictive assessment; a probability between 0 and 1
+(inclusive). This target is not an additional requirement for the primary
+trial success decision.}
 
 \item{gamma_final}{Posterior probability cutoff for declaring a positive trial result at the
-final analysis relative to \code{theta0_null}; a probability between 0 and
-1 (inclusive).}
+final analysis relative to \code{theta0_null}; a probability between 0
+and 1 (inclusive).}
 
-\item{gamma_clin_final}{Posterior probability cutoff for the supplementary final-analysis criterion
-relative to \code{theta0_clin}; a probability between 0 and 1 (inclusive).}
+\item{gamma_clin_final}{Posterior probability cutoff for the supplementary final-analysis
+criterion relative to \code{theta0_clin}; a probability between 0 and 1
+(inclusive).}
 
 \item{S}{Positive integer number of Monte Carlo replications used to estimate the
 predictive probabilities.}
@@ -67,18 +69,21 @@ A named list whose components depend on \code{type}.
 \code{"predictive"} returns the two predictive components; and
 \code{"both"} returns all six components, as described below:
 \describe{
-\item{posterior}{A list containing the shape parameters \code{alpha} and \code{beta} of the
-current Beta posterior.}
-\item{posterior_mean}{Posterior mean of the treatment response rate at the current analysis.}
-\item{posterior_sd}{Posterior standard deviation of the treatment response rate at the current
+\item{posterior}{A list containing the shape parameters \code{alpha} and \code{beta}
+of the current Beta posterior.}
+\item{posterior_mean}{Posterior mean of the treatment response rate at the current
 analysis.}
+\item{posterior_sd}{Posterior standard deviation of the treatment response rate at the
+current analysis.}
 \item{p_null}{Current posterior probability that the response rate exceeds
 \code{theta0_null}.}
-\item{ppos_null}{Posterior predictive probability of satisfying the final efficacy criterion
-based on \code{theta0_null} and \code{gamma_final}, conditional on the
-observed data and completing the planned sample size.}
-\item{ppos_clin}{Supplementary posterior predictive probability of satisfying the final
-criterion based on \code{theta0_clin} and \code{gamma_clin_final}.}
+\item{ppos_null}{Posterior predictive probability of satisfying the final efficacy
+criterion based on \code{theta0_null} and \code{gamma_final},
+conditional on the observed data and completing the planned sample
+size.}
+\item{ppos_clin}{Supplementary posterior predictive probability of satisfying the
+final criterion based on \code{theta0_clin} and
+\code{gamma_clin_final}.}
 }
 }
 \description{
@@ -124,15 +129,6 @@ in the trial success rule evaluated by \code{\link{oc_singlearm_binary}}.
 Predictive probabilities are estimated by Monte Carlo simulation rather
 than exact Beta-binomial summation.
 }
-\references{
-Lee, J. J., and Liu, D. D. (2008). A predictive probability design for
-phase II cancer clinical trials. \emph{Clinical Trials}, 5, 93--106.
-\doi{10.1177/1740774508089279}.
-
-Zhou, H., Lee, J. J., and Yuan, Y. (2017). BOP2: Bayesian optimal design
-for phase II clinical trials with simple and complex endpoints.
-\emph{Statistics in Medicine}, 36, 3302--3314. \doi{10.1002/sim.7338}.
-}
 \examples{
 interim <- posterior_predictive_singlearm_binary(
   x_obs = 9, n_current = 20, N_total = 40,
@@ -147,6 +143,19 @@ predictive_only <- posterior_predictive_singlearm_binary(
   x_obs = 9, n_current = 20, N_total = 40,
   type = "predictive", S = 1000
 )
+}
+\references{
+Thall, P. F., and Simon, R. M. (1994). Practical Bayesian guidelines for
+phase IIB clinical trials. \emph{Biometrics}, 50, 337--349.
+\doi{10.2307/2533377}.
+
+Lee, J. J., and Liu, D. D. (2008). A predictive probability design for
+phase II cancer clinical trials. \emph{Clinical Trials}, 5, 93--106.
+\doi{10.1177/1740774508089279}.
+
+Zhao, J., and Mu, R. (2026).
+Introduction to Bayesian Decision Theory and Its Application
+in Medical Research. Manuscript in preparation (in Chinese).
 }
 \seealso{
 \code{\link{oc_singlearm_binary}}

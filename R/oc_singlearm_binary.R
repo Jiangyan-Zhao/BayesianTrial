@@ -92,9 +92,9 @@
 #' phase II cancer clinical trials. \emph{Clinical Trials}, 5, 93--106.
 #' \doi{10.1177/1740774508089279}.
 #'
-#' Zhou, H., Lee, J. J., and Yuan, Y. (2017). BOP2: Bayesian optimal design
-#' for phase II clinical trials with simple and complex endpoints.
-#' \emph{Statistics in Medicine}, 36, 3302--3314. \doi{10.1002/sim.7338}.
+#' Zhao, J., and Mu, R. (2026).
+#' Introduction to Bayesian Decision Theory and Its Application
+#' in Medical Research. Manuscript in preparation (in Chinese).
 #'
 #' @seealso \code{\link{posterior_predictive_singlearm_binary}}
 #' @examples
@@ -123,7 +123,7 @@ oc_singlearm_binary <- function(
     ntrial = 10000,       # Number of Monte Carlo trial simulations
     seed = 666            # Random seed; NULL uses the current RNG state
 ) {
-  
+
   # Validate all inputs before changing the RNG state
   .validate_probability(theta_true, "theta_true")
   .validate_sample_sizes(n_current, N_total)
@@ -142,58 +142,58 @@ oc_singlearm_binary <- function(
   .validate_seed(seed)
 
   if (!is.null(seed)) set.seed(seed)
-  
+
   # Initialize the remaining sample size and outcome counters
   m_remain <- N_total - n_current  # Number of patients remaining after the interim analysis
   count_null_post <- 0             # Number of trials declared successful
   count_early_stop_f <- 0          # Number of trials stopped early for futility
   count_early_stop_e <- 0          # Number of trials stopped early for efficacy
-  
+
   # Simulate trials using Monte Carlo sampling
   for (itrial in seq_len(ntrial)) {
-    
+
     # Generate interim response data and update the posterior
     x_obs <- rbinom(1, n_current, theta_true)
     post <- list(
       alpha = alpha0 + x_obs,               # First shape parameter of the posterior
       beta  = beta0 + (n_current - x_obs)  # Second shape parameter of the posterior
     )
-    
+
     # Compute the posterior probability of exceeding the historical rate
     p_null <- pbeta(theta0_null, post$alpha, post$beta, lower.tail = FALSE)
-    
+
     # Generate future response data and update the final posterior
     y_fut <- rbinom(1, size = m_remain, prob = theta_true)
     alpha_f <- post$alpha + y_fut
     beta_f <- post$beta + (m_remain - y_fut)
-    
+
     # Apply the prespecified interim and final decision thresholds
     if (p_null > gamma_early) {
-      
+
       # Declare early success when the interim efficacy criterion is met
       count_null_post <- count_null_post + 1
       count_early_stop_e <- count_early_stop_e + 1
-      
+
     } else {
-      
+
       if (p_null > gamma_futility) {
-        
+
         # Continue to the final analysis when neither stopping criterion is met
         p_final <- pbeta(theta0_null, alpha_f, beta_f, lower.tail = FALSE)
-        
+
         # Declare success when the final efficacy criterion is met
         if (p_final > gamma_final) {
           count_null_post <- count_null_post + 1
         }
-        
+
       } else {
-        
+
         # Stop early for futility when the continuation criterion is not met
         count_early_stop_f <- count_early_stop_f + 1
       }
     }
   }
-  
+
   # Return the estimated operating characteristics
   list(
     power_null_post = count_null_post / ntrial,             # Overall success probability (type I error or power)

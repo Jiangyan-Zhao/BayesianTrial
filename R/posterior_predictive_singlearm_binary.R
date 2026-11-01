@@ -98,13 +98,17 @@
 #' }
 #'
 #' @references
+#' Thall, P. F., and Simon, R. M. (1994). Practical Bayesian guidelines for
+#' phase IIB clinical trials. \emph{Biometrics}, 50, 337--349.
+#' \doi{10.2307/2533377}.
+#'
 #' Lee, J. J., and Liu, D. D. (2008). A predictive probability design for
 #' phase II cancer clinical trials. \emph{Clinical Trials}, 5, 93--106.
 #' \doi{10.1177/1740774508089279}.
 #'
-#' Zhou, H., Lee, J. J., and Yuan, Y. (2017). BOP2: Bayesian optimal design
-#' for phase II clinical trials with simple and complex endpoints.
-#' \emph{Statistics in Medicine}, 36, 3302--3314. \doi{10.1002/sim.7338}.
+#' Zhao, J., and Mu, R. (2026).
+#' Introduction to Bayesian Decision Theory and Its Application
+#' in Medical Research. Manuscript in preparation (in Chinese).
 #'
 #' @seealso \code{\link{oc_singlearm_binary}}
 #' @examples
@@ -161,7 +165,7 @@ posterior_predictive_singlearm_binary <- function(
     alpha = alpha0 + x_obs,                 # First shape parameter of the posterior
     beta  = beta0 + (n_current - x_obs)    # Second shape parameter of the posterior
   )
-  
+
   # Return exact posterior summaries without running predictive simulations
   if (type != "predictive") {
     post_mean <- post$alpha / (post$alpha + post$beta)
@@ -187,32 +191,32 @@ posterior_predictive_singlearm_binary <- function(
   # Estimate predictive probabilities for both final success criteria
   success_null <- numeric(S)
   success_clin <- numeric(S)
-  
+
   for (s in seq_len(S)) {
-    
+
     # Draw a response rate from the current posterior
     pi_s <- rbeta(1, post$alpha, post$beta)
-    
+
     # Simulate the number of responses among the remaining patients
     y_fut <- rbinom(1, size = m_remain, prob = pi_s)
-    
+
     # Update the final posterior using current and simulated future responses
     alpha_f <- post$alpha + y_fut
     beta_f <- post$beta + (m_remain - y_fut)
-    
+
     # Compute the final posterior probabilities
     p_final_null <- pbeta(theta0_null, alpha_f, beta_f, lower.tail = FALSE)
     p_final_clin <- pbeta(theta0_clin, alpha_f, beta_f, lower.tail = FALSE)
-    
+
     # Evaluate the prespecified final success criteria
     success_null[s] <- as.numeric(p_final_null > gamma_final)
     success_clin[s] <- as.numeric(p_final_clin > gamma_clin_final)
   }
-  
+
   # Estimate predictive probabilities as proportions of successful replications
   ppos_null <- mean(success_null)
   ppos_clin <- mean(success_clin)
-  
+
   # Return only the requested components, retaining the original names
   predictive_result <- list(
     ppos_null = ppos_null,
