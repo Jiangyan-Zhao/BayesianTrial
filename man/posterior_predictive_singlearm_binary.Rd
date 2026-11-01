@@ -15,7 +15,8 @@ posterior_predictive_singlearm_binary(
   gamma_final = 0.95,
   gamma_clin_final = 0.9,
   S = 10000,
-  seed = 666
+  seed = 666,
+  type = c("both", "posterior", "predictive")
 )
 }
 \arguments{
@@ -52,10 +53,19 @@ predictive probabilities.}
 
 \item{seed}{Integer random seed, or \code{NULL} to use the current random number
 generator state. A non-\code{NULL} value calls \code{set.seed()} and
-changes the session's random number generator state.}
+changes the session's random number generator state when predictive
+probabilities are requested. It is not used for posterior-only output.}
+
+\item{type}{Character string specifying which results to return:
+\code{"posterior"} for current posterior summaries,
+\code{"predictive"} for final-analysis predictive probabilities, or
+\code{"both"} (the default) for all results.}
 }
 \value{
-A named list containing:
+A named list whose components depend on \code{type}.
+\code{"posterior"} returns the four posterior components;
+\code{"predictive"} returns the two predictive components; and
+\code{"both"} returns all six components, as described below:
 \describe{
 \item{posterior}{A list containing the shape parameters \code{alpha} and \code{beta} of the
 current Beta posterior.}
@@ -78,6 +88,12 @@ predictive probabilities of meeting prespecified posterior efficacy
 criteria at the planned final analysis.
 }
 \details{
+With \code{type = "posterior"}, the function does not perform Monte
+Carlo simulation or change the random number generator state.
+With \code{type = "predictive"}, only the two final-analysis
+predictive probabilities are returned. The default
+\code{type = "both"} preserves the full output of earlier versions.
+
 Let \eqn{\theta} denote the unknown treatment response rate, with a
 \eqn{\mathrm{Beta}(\alpha_0,\beta_0)} prior. Given \eqn{x} responses among
 \eqn{n} patients with evaluable outcomes, its posterior distribution is
@@ -124,6 +140,13 @@ interim <- posterior_predictive_singlearm_binary(
 )
 interim$p_null
 interim$ppos_null
+posterior_only <- posterior_predictive_singlearm_binary(
+  x_obs = 9, n_current = 20, N_total = 40, type = "posterior"
+)
+predictive_only <- posterior_predictive_singlearm_binary(
+  x_obs = 9, n_current = 20, N_total = 40,
+  type = "predictive", S = 1000
+)
 }
 \seealso{
 \code{\link{oc_singlearm_binary}}
