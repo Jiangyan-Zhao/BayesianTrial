@@ -29,21 +29,18 @@
 #'   (inclusive).
 #' @param S Positive integer number of Monte Carlo replications used to estimate the
 #'   predictive probabilities.
-#' @param seed Integer random seed, or \code{NULL} to use the current random number
-#'   generator state. A non-\code{NULL} value calls \code{set.seed()} and
-#'   changes the session's random number generator state when predictive
-#'   probabilities are requested. It is not used for posterior-only output.
 #' @param type Character string specifying which results to return:
 #'   \code{"posterior"} for current posterior summaries,
 #'   \code{"predictive"} for final-analysis predictive probabilities, or
-#'   \code{"both"} for all results. The default is \code{"posterior"}.
+#'   \code{"both"} (the default) for all results.
+#' @param seed Optional integer seed for reproducibility.
 #'
 #' @details
-#' The default \code{type = "posterior"} returns current posterior
-#' summaries without Monte Carlo simulation or changing the random number
-#' generator state. With \code{type = "predictive"}, only the two
-#' final-analysis predictive probabilities are returned. Setting
-#' \code{type = "both"} returns the full output of earlier versions.
+#' With \code{type = "posterior"}, the function does not perform Monte
+#' Carlo simulation or change the random number generator state.
+#' With \code{type = "predictive"}, only the two final-analysis
+#' predictive probabilities are returned. The default
+#' \code{type = "both"} preserves the full output of earlier versions.
 #'
 #' Let \eqn{\theta} denote the unknown treatment response rate, with a
 #' \eqn{\mathrm{Beta}(\alpha_0,\beta_0)} prior. Given \eqn{x} responses among
@@ -98,6 +95,10 @@
 #' }
 #'
 #' @references
+#' Zhao, J., and Mu, R. (2026).
+#' Introduction to Bayesian Decision Theory and Its Application
+#' in Medical Research. Manuscript in preparation (in Chinese).
+#'
 #' Thall, P. F., and Simon, R. M. (1994). Practical Bayesian guidelines for
 #' phase IIB clinical trials. \emph{Biometrics}, 50, 337--349.
 #' \doi{10.2307/2533377}.
@@ -106,25 +107,20 @@
 #' phase II cancer clinical trials. \emph{Clinical Trials}, 5, 93--106.
 #' \doi{10.1177/1740774508089279}.
 #'
-#' Zhao, J., and Mu, R. (2026).
-#' Introduction to Bayesian Decision Theory and Its Application
-#' in Medical Research. Manuscript in preparation (in Chinese).
-#'
 #' @seealso \code{\link{oc_singlearm_binary}}
 #' @examples
 #' interim <- posterior_predictive_singlearm_binary(
 #'   x_obs = 9, n_current = 20, N_total = 40,
-#'   theta0_null = 0.20, gamma_final = 0.95,
-#'   S = 1000, type = "both"
+#'   theta0_null = 0.20, gamma_final = 0.95
 #' )
 #' interim$p_null
 #' interim$ppos_null
 #' posterior_only <- posterior_predictive_singlearm_binary(
-#'   x_obs = 9, n_current = 20, N_total = 40
+#'   x_obs = 9, n_current = 20, N_total = 40, type = "posterior"
 #' )
 #' predictive_only <- posterior_predictive_singlearm_binary(
 #'   x_obs = 9, n_current = 20, N_total = 40,
-#'   type = "predictive", S = 1000
+#'   type = "predictive"
 #' )
 #' @importFrom stats pbeta rbeta rbinom
 #' @export
@@ -140,8 +136,8 @@ posterior_predictive_singlearm_binary <- function(
     gamma_final = 0.95,   # Final posterior probability threshold for exceeding the historical rate
     gamma_clin_final = 0.90,   # Final posterior probability threshold for exceeding the clinical target rate
     S = 10000,           # Number of Monte Carlo replications
-    seed = 666,          # Random seed
-    type = c("posterior", "predictive", "both")  # Requested output
+    type = c("both", "posterior", "predictive"),  # Requested output
+    seed = 666          # Random seed
 ) {
   # Select the requested output before validating the inputs
   type <- match.arg(type)
