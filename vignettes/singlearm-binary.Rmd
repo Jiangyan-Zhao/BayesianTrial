@@ -112,7 +112,8 @@ data.frame(
 
 Use `type = "posterior"` if only current posterior inference is required,
 or `type = "predictive"` if only the final success probabilities are
-needed. The default `type = "both"` returns all summaries.
+needed. The default `type = "posterior"` returns posterior summaries;
+set `type = "both"` to obtain all results.
 
 The posterior distribution is Beta(9.2, 11.8). Here:
 
