@@ -215,3 +215,39 @@ test_that("equality with final success thresholds is not success", {
   expect_equal(result$ppos_null, 0)
   expect_equal(result$ppos_clin, 0)
 })
+
+# Verify selectable posterior and predictive outputs
+test_that("type selects the requested results and preserves defaults", {
+  base <- list(x_obs = 9, n_current = 20, N_total = 40, S = 1000, seed = 666)
+  all_results <- do.call(posterior_predictive_singlearm_binary, base)
+  posterior <- do.call(posterior_predictive_singlearm_binary,
+                      c(base, list(type = "posterior")))
+  predictive <- do.call(posterior_predictive_singlearm_binary,
+                       c(base, list(type = "predictive")))
+
+  expect_named(posterior, c("posterior", "posterior_mean",
+                            "posterior_sd", "p_null"))
+  expect_named(predictive, c("ppos_null", "ppos_clin"))
+  expect_identical(posterior, all_results[names(posterior)])
+  expect_identical(predictive, all_results[names(predictive)])
+  expect_named(all_results, c(names(posterior), names(predictive)))
+})
+
+test_that("posterior-only computation does not advance the RNG", {
+  set.seed(42)
+  initial <- .Random.seed
+  posterior_predictive_singlearm_binary(
+    x_obs = 9, n_current = 20, N_total = 40, type = "posterior"
+  )
+  expect_identical(.Random.seed, initial)
+})
+
+test_that("invalid output types are rejected", {
+  for (type in list("invalid", "", NA_character_, c("both", "other"), 1)) {
+    expect_error(
+      posterior_predictive_singlearm_binary(
+        x_obs = 9, n_current = 20, N_total = 40, type = type
+      )
+    )
+  }
+})
