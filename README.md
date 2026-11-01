@@ -1,3 +1,4 @@
+
 <!-- README.md is generated from README.Rmd. Please edit README.Rmd only. -->
 
 # BayesianTrial
@@ -6,36 +7,38 @@
 
 **Bayesian decision-making for clinical trials in R.**
 
-BayesianTrial provides tools for posterior inference, predictive probabilities,
-and operating characteristics of Bayesian clinical trial designs. The current
-version supports two-stage, single-arm phase II trials with binary endpoints
-using Beta-binomial models.
+BayesianTrial provides tools for posterior inference, predictive
+probabilities, and operating characteristics of Bayesian clinical trial
+designs. The current version supports two-stage, single-arm phase II
+trials with binary endpoints using Beta-binomial models.
 
 ## Installation
 
 Install the package from GitHub using [pak](https://pak.r-lib.org/):
 
-```r
+``` r
 install.packages("pak")
-pak::pkg_install("Jiangyan-Zhao/BayesianTrial")
+pak::pak("Jiangyan-Zhao/BayesianTrial")
 ```
 
 ## Current functionality
 
-- `posterior_predictive_singlearm_binary()` calculates posterior summaries
-  and predictive probabilities of meeting final posterior success criteria.
-- `oc_singlearm_binary()` estimates overall trial success, early efficacy
-  stopping, and early futility stopping through Monte Carlo simulation.
+- `posterior_predictive_singlearm_binary()` calculates posterior
+  summaries and predictive probabilities of meeting final posterior
+  success criteria.
+- `oc_singlearm_binary()` estimates overall trial success, early
+  efficacy stopping, and early futility stopping through Monte Carlo
+  simulation.
 
 ## Quick start
 
 Consider a hypothetical trial with a historical response rate of 20%, an
-interim analysis after 20 patients, and a maximum sample size of 40. Nine
-responses are observed at interim, with a Beta(0.2, 0.8) prior.
+interim analysis after 20 patients, and a maximum sample size of 40.
+Nine responses are observed at interim, with a Beta(0.2, 0.8) prior.
 
 ### Posterior and predictive probabilities
 
-```r
+``` r
 library(BayesianTrial)
 
 prob <- posterior_predictive_singlearm_binary(
@@ -55,17 +58,18 @@ prob$p_null
 prob$ppos_null
 ```
 
-Here, `p_null` is the posterior probability that the response rate exceeds
-0.20, while `ppos_null` is the predictive probability of meeting the final
-posterior success criterion. The function also returns `ppos_clin` for an
-additional clinical-target analysis. Set `type = "posterior"` to return
-only current posterior summaries, or `type = "predictive"` to return only
-predictive probabilities. The default `type = "posterior"` returns only
-posterior summaries; set `type = "both"` to obtain both.
+Here, `p_null` is the posterior probability that the response rate
+exceeds 0.20, while `ppos_null` is the predictive probability of meeting
+the final posterior success criterion. The function also returns
+`ppos_clin` for an additional clinical-target analysis. Set
+`type = "posterior"` to return only current posterior summaries, or
+`type = "predictive"` to return only predictive probabilities. The
+default `type = "posterior"` returns only posterior summaries; set
+`type = "both"` to obtain both.
 
 ### Operating characteristics
 
-```r
+``` r
 oc <- oc_singlearm_binary(
   theta_true = 0.20,
   n_current = 20,
@@ -83,20 +87,21 @@ oc <- oc_singlearm_binary(
 oc
 ```
 
-The overall success probability (`power_null_post`) estimates the type I error
-rate when `theta_true = 0.20`. Setting `theta_true = 0.40` evaluates
-statistical power under that alternative. Both early stopping probabilities
-are also returned.
+The overall success probability (`power_null_post`) estimates the type I
+error rate when `theta_true = 0.20`. Setting `theta_true = 0.40`
+evaluates statistical power under that alternative. Both early stopping
+probabilities are also returned.
 
-For more details, see the
-[single-arm binary endpoint vignette](vignettes/singlearm-binary.Rmd).
+For more details, see the [single-arm binary endpoint
+vignette](vignettes/singlearm-binary.Rmd).
 
 ## Planned extensions
 
 Future development will explore predictive-probability-based interim
-monitoring, design calibration, two-arm and multi-arm trials, and additional
-endpoint types, including continuous, count, and time-to-event outcomes.
+monitoring, design calibration, two-arm and multi-arm trials, and
+additional endpoint types, including continuous, count, and
+time-to-event outcomes.
 
 ## License
 
-GPL (>= 3).
+GPL (\>= 3).

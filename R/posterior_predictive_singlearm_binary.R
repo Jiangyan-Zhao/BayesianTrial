@@ -75,9 +75,16 @@
 #'
 #' predictive <- posterior_predictive_singlearm_binary(
 #'   x_obs = 9, n_current = 20, N_total = 40,
-#'   type = "predictive", S = 1000
+#'   type = "predictive"
 #' )
 #' predictive$ppos_null
+#'
+#' both <- posterior_predictive_singlearm_binary(
+#'   x_obs = 9, n_current = 20, N_total = 40,
+#'   type = "both"
+#' )
+#' both
+#'
 #' @importFrom stats pbeta rbeta rbinom
 #' @export
 

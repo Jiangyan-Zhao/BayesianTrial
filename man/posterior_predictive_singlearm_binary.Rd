@@ -59,15 +59,21 @@ The default returns posterior summaries; \code{"predictive"} returns
 predictive probabilities; \code{"both"} returns all components:
 \describe{
 \item{posterior}{Shape parameters \code{alpha} and \code{beta} of the
-current Beta posterior.}
-\item{posterior_mean}{Posterior mean of the response rate.}
-\item{posterior_sd}{Posterior standard deviation of the response rate.}
+current Beta posterior.
+}
+\item{posterior_mean}{Posterior mean of the response rate.
+}
+\item{posterior_sd}{Posterior standard deviation of the response rate.
+}
 \item{p_null}{Posterior probability that the response rate exceeds
-\code{theta0_null}.}
+\code{theta0_null}.
+}
 \item{ppos_null}{Predictive probability of meeting the final efficacy
-criterion defined by \code{theta0_null} and \code{gamma_final}.}
+criterion defined by \code{theta0_null} and \code{gamma_final}.
+}
 \item{ppos_clin}{Predictive probability of meeting the supplementary
-criterion defined by \code{theta0_clin} and \code{gamma_clin_final}.}
+criterion defined by \code{theta0_clin} and \code{gamma_clin_final}.
+}
 }
 
 Predictive probabilities are estimated by Monte Carlo simulation,
@@ -87,9 +93,16 @@ posterior$p_null
 
 predictive <- posterior_predictive_singlearm_binary(
   x_obs = 9, n_current = 20, N_total = 40,
-  type = "predictive", S = 1000
+  type = "predictive"
 )
 predictive$ppos_null
+
+both <- posterior_predictive_singlearm_binary(
+  x_obs = 9, n_current = 20, N_total = 40,
+  type = "both"
+)
+both
+
 }
 \references{
 Zhao, J., and Mu, R. (2026).
