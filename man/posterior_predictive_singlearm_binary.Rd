@@ -16,7 +16,7 @@ posterior_predictive_singlearm_binary(
   gamma_clin_final = 0.9,
   S = 10000,
   seed = 666,
-  type = c("both", "posterior", "predictive")
+  type = c("posterior", "predictive", "both")
 )
 }
 \arguments{
@@ -61,7 +61,7 @@ probabilities are requested. It is not used for posterior-only output.}
 \item{type}{Character string specifying which results to return:
 \code{"posterior"} for current posterior summaries,
 \code{"predictive"} for final-analysis predictive probabilities, or
-\code{"both"} (the default) for all results.}
+\code{"both"} for all results. The default is \code{"posterior"}.}
 }
 \value{
 A named list whose components depend on \code{type}.
@@ -93,11 +93,11 @@ predictive probabilities of meeting prespecified posterior efficacy
 criteria at the planned final analysis.
 }
 \details{
-With \code{type = "posterior"}, the function does not perform Monte
-Carlo simulation or change the random number generator state.
-With \code{type = "predictive"}, only the two final-analysis
-predictive probabilities are returned. The default
-\code{type = "both"} preserves the full output of earlier versions.
+The default \code{type = "posterior"} returns current posterior
+summaries without Monte Carlo simulation or changing the random number
+generator state. With \code{type = "predictive"}, only the two
+final-analysis predictive probabilities are returned. Setting
+\code{type = "both"} returns the full output of earlier versions.
 
 Let \eqn{\theta} denote the unknown treatment response rate, with a
 \eqn{\mathrm{Beta}(\alpha_0,\beta_0)} prior. Given \eqn{x} responses among
@@ -132,12 +132,13 @@ than exact Beta-binomial summation.
 \examples{
 interim <- posterior_predictive_singlearm_binary(
   x_obs = 9, n_current = 20, N_total = 40,
-  theta0_null = 0.20, gamma_final = 0.95, S = 1000
+  theta0_null = 0.20, gamma_final = 0.95,
+  S = 1000, type = "both"
 )
 interim$p_null
 interim$ppos_null
 posterior_only <- posterior_predictive_singlearm_binary(
-  x_obs = 9, n_current = 20, N_total = 40, type = "posterior"
+  x_obs = 9, n_current = 20, N_total = 40
 )
 predictive_only <- posterior_predictive_singlearm_binary(
   x_obs = 9, n_current = 20, N_total = 40,
