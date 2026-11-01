@@ -87,7 +87,7 @@ alternative_oc$power_null_post  # Power at the alternative rate
 }
 \references{
 Zhao, J., and Mu, R. (2026).
-Introduction to Bayesian Decision Theory and Its Application
+Introduction to Bayesian Decision Method and Its Application
 in Medical Research. Manuscript in preparation (in Chinese).
 
 Thall, P. F., and Simon, R. M. (1994). Practical Bayesian guidelines for

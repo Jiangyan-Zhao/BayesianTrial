@@ -84,51 +84,31 @@ it does not calibrate them automatically.
 
 ## Analyze the interim results
 
-Suppose 9 of the first 20 patients respond. Use
-`posterior_predictive_singlearm_binary()` to summarize the current
-evidence and estimate the probability of meeting the final success
-criterion if recruitment continues to 40 patients.
+Suppose 9 of the first 20 patients respond. At the interim analysis,
+calculate the posterior probability that the ORR exceeds the historical
+reference rate of 20%:
 
-```{r interim-analysis}
-result <- posterior_predictive_singlearm_binary(
+```{r interim-posterior}
+posterior <- posterior_predictive_singlearm_binary(
   x_obs = 9,
   n_current = 20,
   N_total = 40,
   alpha0 = 0.2,
   beta0 = 0.8,
-  theta0_null = 0.20,
-  gamma_final = 0.95,
-  S = 10000,
-  seed = 666,
-  type = "both"
+  theta0_null = 0.20
 )
 
-data.frame(
-  Measure = c("Current posterior probability",
-              "Predictive probability of final success"),
-  Probability = round(c(result$p_null, result$ppos_null), 3)
-)
+posterior$p_null
 ```
 
-Use `type = "posterior"` if only current posterior inference is required,
-or `type = "predictive"` if only the final success probabilities are
-needed. The default `type = "posterior"` returns posterior summaries;
-set `type = "both"` to obtain all results.
-
-The posterior distribution is Beta(9.2, 11.8). Here:
-
-- `p_null` is the posterior probability that the ORR exceeds 20%,
-  based on the 20 observed patients.
-- `ppos_null` is the predictive probability that the **final**
-  posterior probability will exceed 0.95, assuming enrollment continues
-  to 40 patients.
-
-Apply the prespecified **posterior** stopping rules to the observed data:
+The posterior distribution is Beta(9.2, 11.8), and the probability of
+exceeding 20% is approximately 0.992. Apply the prespecified interim
+stopping rules to the observed data:
 
 ```{r interim-decision}
-decision <- if (result$p_null > 0.98) {
+decision <- if (posterior$p_null > 0.98) {
   "Stop for efficacy"
-} else if (result$p_null <= 0.50) {
+} else if (posterior$p_null <= 0.50) {
   "Stop for futility"
 } else {
   "Continue to the final analysis"
@@ -137,11 +117,40 @@ decision <- if (result$p_null > 0.98) {
 decision
 ```
 
-In this example, the trial stops early for efficacy. The predictive
-probability is supplementary: it does not determine stopping in the
-current design. For a trial that continues, the final decision is based
-on whether the posterior probability of exceeding 20% is strictly
-greater than 0.95.
+The posterior probability exceeds the efficacy stopping threshold
+of 0.98, so the trial stops early for efficacy under this design.
+For trials that continue, final success requires the posterior
+probability of exceeding 20% to be greater than 0.95.
+
+## Predictive probability if enrollment continues
+
+For illustration, we also assess the probability of meeting the final
+success criterion **if the trial were to continue to 40 evaluable
+patients**, despite meeting the early efficacy stopping rule:
+
+```{r interim-predictive}
+predictive <- posterior_predictive_singlearm_binary(
+  x_obs = 9,
+  n_current = 20,
+  N_total = 40,
+  alpha0 = 0.2,
+  beta0 = 0.8,
+  theta0_null = 0.20,
+  gamma_final = 0.95,
+  type = "predictive",
+  S = 10000,
+  seed = 666
+)
+
+predictive$ppos_null
+```
+
+Here, `ppos_null` is the posterior predictive probability that the
+final posterior probability will exceed 0.95. This is a supplementary
+assessment and does not determine stopping in the current design.
+The function defaults to `type = "posterior"`; setting
+`type = "both"` returns posterior summaries and predictive
+probabilities together.
 
 ## Additional clinical-target assessment
 
