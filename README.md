@@ -60,7 +60,8 @@ Here, `p_null` is the posterior probability that the response rate exceeds
 posterior success criterion. The function also returns `ppos_clin` for an
 additional clinical-target analysis. Set `type = "posterior"` to return
 only current posterior summaries, or `type = "predictive"` to return only
-predictive probabilities. The default `type = "both"` returns both.
+predictive probabilities. The default `type = "posterior"` returns only
+posterior summaries; set `type = "both"` to obtain both.
 
 ### Operating characteristics
 
