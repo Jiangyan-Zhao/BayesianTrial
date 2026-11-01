@@ -2,7 +2,7 @@
 % Please edit documentation in R/oc_singlearm_binary.R
 \name{oc_singlearm_binary}
 \alias{oc_singlearm_binary}
-\title{Operating Characteristics of a Two-Stage Single-Arm Binary Trial}
+\title{Operating Characteristics of a Two-Stage Single-Arm Phase II Trial with a Binary Endpoint}
 \usage{
 oc_singlearm_binary(
   theta_true,
@@ -19,79 +19,121 @@ oc_singlearm_binary(
 )
 }
 \arguments{
-\item{theta_true}{Finite true response probability used to generate trial
-data, between 0 and 1.}
+\item{theta_true}{Assumed true treatment response rate for generating trial outcomes; a
+probability between 0 and 1 (inclusive). Specify the null-scenario rate to
+assess the type I error rate or a clinically promising alternative rate to
+assess power.}
 
-\item{n_current}{Non-negative integer interim sample size, not exceeding
-\code{N_total}.}
+\item{n_current}{Planned number of patients with evaluable outcomes at the single interim
+analysis; a non-negative integer not exceeding \code{N_total}. A
+conventional two-stage design requires \code{0 < n_current < N_total}.}
 
-\item{N_total}{Non-negative integer maximum sample size, at least
-\code{n_current}.}
+\item{N_total}{Planned maximum number of evaluable patients; a non-negative integer at
+least as large as \code{n_current}.}
 
-\item{alpha0, beta0}{Finite positive shape parameters of the Beta prior;
-their sum must also be finite.}
+\item{alpha0, beta0}{Positive, finite shape parameters of the Beta prior for the response rate.
+Their sum must also be finite.}
 
-\item{theta0_null}{Finite historical reference response rate, between
-0 and 1.}
+\item{theta0_null}{Prespecified unacceptable or historical reference response rate used as the
+primary efficacy benchmark; a probability between 0 and 1 (inclusive).}
 
-\item{gamma_early}{Finite interim posterior probability threshold for
-early efficacy stopping, between 0 and 1.}
+\item{gamma_early}{Interim posterior probability cutoff for early declaration of efficacy; a
+probability between 0 and 1 (inclusive). An early positive result is
+declared if the posterior probability of exceeding \code{theta0_null} is
+strictly greater than this cutoff.}
 
-\item{gamma_futility}{Finite interim posterior probability threshold
-for futility stopping, between 0 and 1 and strictly smaller than
-\code{gamma_early}. This threshold applies to the current posterior
-probability, not to a predictive probability.}
+\item{gamma_futility}{Interim posterior probability cutoff for stopping due to futility; a
+probability between 0 and 1 (inclusive) and strictly less than
+\code{gamma_early}. Futility stopping occurs if the posterior probability
+of exceeding \code{theta0_null} is less than or equal to this cutoff. This
+is not a predictive probability cutoff.}
 
-\item{gamma_final}{Finite final posterior probability threshold for
-success, between 0 and 1.}
+\item{gamma_final}{Posterior probability cutoff for declaring a positive result at the final
+analysis if the trial continues; a probability between 0 and 1 (inclusive).}
 
-\item{ntrial}{Positive integer number of simulated trials.}
+\item{ntrial}{Positive integer number of independently simulated trials.}
 
-\item{seed}{Integer random seed, or \code{NULL} to use the current random
-number generator state. Providing a seed resets the session RNG state.}
+\item{seed}{Integer random seed, or \code{NULL} to use the current random number
+generator state. A non-\code{NULL} value calls \code{set.seed()} and
+changes the session's random number generator state.}
 }
 \value{
 A named list containing:
 \describe{
-\item{power_null_post}{Estimated overall trial success probability.}
-\item{early_stop_rate_futility}{Estimated probability of interim
-futility stopping.}
-\item{early_stop_rate_efficacy}{Estimated probability of interim
-efficacy stopping.}
+\item{power_null_post}{Estimated overall probability of declaring a positive trial result,
+including early efficacy stopping. Interpreted as type I error probability
+under a null scenario or as power under a specified alternative.}
+\item{early_stop_rate_futility}{Estimated probability of stopping the trial at the interim analysis for
+futility.}
+\item{early_stop_rate_efficacy}{Estimated probability of stopping the trial at the interim analysis for
+efficacy.}
 }
 }
 \description{
-Simulate the complete two-stage trial under a specified true response rate
-and estimate the overall success probability and interim stopping rates.
+Evaluate a prespecified two-stage Bayesian decision rule for a single-arm
+phase II trial with a binary efficacy endpoint. Monte Carlo simulation
+estimates the probability of a positive trial conclusion and the
+probabilities of early termination for efficacy or futility at an assumed
+true response rate.
 }
 \details{
-In each simulated trial, interim binary responses are generated under the
-fixed data-generating rate \code{theta_true}. The Beta posterior is then
-updated, and the posterior probability that the unknown response rate
-exceeds \code{theta0_null} is calculated.
+For each simulated trial, binary efficacy outcomes are generated at the
+assumed true response rate \code{theta_true}. After \code{n_current}
+patients have evaluable outcomes, the Beta posterior is updated and the
+posterior probability that the unknown response rate exceeds
+\code{theta0_null} is calculated.
 
-The trial declares early success if this posterior probability is strictly
-greater than \code{gamma_early}, and stops for futility if it is less than
-or equal to \code{gamma_futility}. Otherwise, the trial continues to the
-final analysis, where success requires the final posterior probability
-to be strictly greater than \code{gamma_final}.
+At the interim analysis, a positive result is declared and the trial stops
+early for efficacy if this posterior probability is strictly greater than
+\code{gamma_early}. The trial stops early for futility if the probability
+is less than or equal to \code{gamma_futility}. Otherwise, the trial
+continues to \code{N_total} evaluable patients. At the final analysis, a
+positive result is declared only if the updated posterior probability is
+strictly greater than \code{gamma_final}. Early efficacy declarations are
+included in the overall probability of a positive trial result.
 
-For reproducibility of the simulation sequence, outcomes for the remaining
-patients are generated even for trials stopped at interim; these simulated
-outcomes have no effect on their stopping decisions.
+The overall positive-result probability is estimated as
+\code{power_null_post}. When \code{theta_true} equals the prespecified
+null-scenario response rate, this quantity estimates the type I error
+probability at that design point; when \code{theta_true} is a specified
+promising alternative rate, it estimates statistical power. The other
+outputs quantify early termination for futility and efficacy. The function
+estimates operating characteristics for the supplied decision rule; it
+neither calibrates the thresholds nor guarantees type I error control or
+target power.
 
-The reported \code{power_null_post} is the overall probability of
-declaring trial success. At a response rate specified under the null
-hypothesis it estimates the type I error rate; at an alternative rate
-it estimates statistical power.
+This function implements one interim analysis with posterior-probability
+stopping rules, not interim monitoring based on predictive probability or
+the optimized stopping boundaries of the BOP2 design. It accepts boundary
+sample sizes for computational purposes, but a genuine two-stage design has
+\code{0 < n_current < N_total}. For reproducibility, responses for the
+remaining patients are also simulated after an interim stop; these outcomes
+are ignored in the trial decision.
+}
+\references{
+Thall, P. F., and Simon, R. M. (1994). Practical Bayesian guidelines for
+phase IIB clinical trials. \emph{Biometrics}, 50, 337--349.
+\doi{10.2307/2533377}.
+
+Lee, J. J., and Liu, D. D. (2008). A predictive probability design for
+phase II cancer clinical trials. \emph{Clinical Trials}, 5, 93--106.
+\doi{10.1177/1740774508089279}.
+
+Zhou, H., Lee, J. J., and Yuan, Y. (2017). BOP2: Bayesian optimal design
+for phase II clinical trials with simple and complex endpoints.
+\emph{Statistics in Medicine}, 36, 3302--3314. \doi{10.1002/sim.7338}.
 }
 \examples{
-null_oc <- oc_singlearm_binary(theta_true = 0.20, n_current = 20,
-                      N_total = 40, ntrial = 1000)
-alternative_oc <- oc_singlearm_binary(theta_true = 0.40, n_current = 20,
-                             N_total = 40, ntrial = 1000)
-null_oc
-alternative_oc
+null_oc <- oc_singlearm_binary(
+  theta_true = 0.20, n_current = 20, N_total = 40,
+  ntrial = 1000
+)
+alternative_oc <- oc_singlearm_binary(
+  theta_true = 0.40, n_current = 20, N_total = 40,
+  ntrial = 1000
+)
+null_oc$power_null_post  # Type I error probability at the null rate
+alternative_oc$power_null_post  # Power at the alternative rate
 }
 \seealso{
 \code{\link{posterior_predictive_singlearm_binary}}
