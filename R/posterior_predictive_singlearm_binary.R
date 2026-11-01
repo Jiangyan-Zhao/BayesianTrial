@@ -32,15 +32,15 @@
 #' @param type Character string specifying which results to return:
 #'   \code{"posterior"} for current posterior summaries,
 #'   \code{"predictive"} for final-analysis predictive probabilities, or
-#'   \code{"both"} (the default) for all results.
+#'   \code{"both"} for all results. The default is \code{"posterior"}.
 #' @param seed Optional integer seed for reproducibility.
 #'
 #' @details
 #' With \code{type = "posterior"}, the function does not perform Monte
 #' Carlo simulation or change the random number generator state.
 #' With \code{type = "predictive"}, only the two final-analysis
-#' predictive probabilities are returned. The default
-#' \code{type = "both"} preserves the full output of earlier versions.
+#' predictive probabilities are returned. Use
+#' \code{type = "both"} to obtain all results.
 #'
 #' Let \eqn{\theta} denote the unknown treatment response rate, with a
 #' \eqn{\mathrm{Beta}(\alpha_0,\beta_0)} prior. Given \eqn{x} responses among
@@ -111,12 +111,13 @@
 #' @examples
 #' interim <- posterior_predictive_singlearm_binary(
 #'   x_obs = 9, n_current = 20, N_total = 40,
-#'   theta0_null = 0.20, gamma_final = 0.95
+#'   theta0_null = 0.20, gamma_final = 0.95,
+#'   type = "both"
 #' )
 #' interim$p_null
 #' interim$ppos_null
 #' posterior_only <- posterior_predictive_singlearm_binary(
-#'   x_obs = 9, n_current = 20, N_total = 40, type = "posterior"
+#'   x_obs = 9, n_current = 20, N_total = 40
 #' )
 #' predictive_only <- posterior_predictive_singlearm_binary(
 #'   x_obs = 9, n_current = 20, N_total = 40,
@@ -136,7 +137,7 @@ posterior_predictive_singlearm_binary <- function(
     gamma_final = 0.95,   # Final posterior probability threshold for exceeding the historical rate
     gamma_clin_final = 0.90,   # Final posterior probability threshold for exceeding the clinical target rate
     S = 10000,           # Number of Monte Carlo replications
-    type = c("both", "posterior", "predictive"),  # Requested output
+    type = c("posterior", "predictive", "both"),  # Requested output
     seed = 666          # Random seed
 ) {
   # Select the requested output before validating the inputs
