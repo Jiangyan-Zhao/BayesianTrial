@@ -99,7 +99,8 @@ result <- posterior_predictive_singlearm_binary(
   theta0_null = 0.20,
   gamma_final = 0.95,
   S = 10000,
-  seed = 666
+  seed = 666,
+  type = "both"
 )
 
 data.frame(
@@ -108,6 +109,10 @@ data.frame(
   Probability = round(c(result$p_null, result$ppos_null), 3)
 )
 ```
+
+Use `type = "posterior"` if only current posterior inference is required,
+or `type = "predictive"` if only the final success probabilities are
+needed. The default `type = "both"` returns all summaries.
 
 The posterior distribution is Beta(9.2, 11.8). Here:
 
