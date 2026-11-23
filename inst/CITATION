@@ -1,0 +1,12 @@
+citHeader("To cite the BayesianTrial package in publications use:")
+
+bibentry(
+  bibtype = "Manual",
+  title   = "BayesianTrial: Beta Kernel Process Modeling",
+  author  = c(person(given = "Jiangyan", family = "Zhao"),
+              person(given = "Rongji", family = "Mu")),
+  year    = "2026",
+  note    = "R package version 0.1.0",
+  url     = "https://cran.r-project.org/package=BayesianTrial",
+  doi     = "10.32614/CRAN.package.BayesianTrial"
+)

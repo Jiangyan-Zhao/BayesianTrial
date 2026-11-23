@@ -3,6 +3,10 @@
 
 # BayesianTrial
 
+[![CRAN
+status](https://www.r-pkg.org/badges/version/BayesianTrial)](https://cran.r-project.org/package=BayesianTrial)
+![Total
+downloads](https://cranlogs.r-pkg.org/badges/grand-total/BayesianTrial)
 [![R-CMD-check](https://github.com/Jiangyan-Zhao/BayesianTrial/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Jiangyan-Zhao/BayesianTrial/actions/workflows/R-CMD-check.yaml)
 
 **Bayesian decision-making for clinical trials in R.**
