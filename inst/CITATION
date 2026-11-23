@@ -2,7 +2,7 @@ citHeader("To cite the BayesianTrial package in publications use:")
 
 bibentry(
   bibtype = "Manual",
-  title   = "BayesianTrial: Beta Kernel Process Modeling",
+  title   = "BayesianTrial: Bayesian Decision-Making for Clinical Trials",
   author  = c(person(given = "Jiangyan", family = "Zhao"),
               person(given = "Rongji", family = "Mu")),
   year    = "2026",
